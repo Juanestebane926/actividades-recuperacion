@@ -14,11 +14,11 @@ Entorno: teléfono Kalley Black Z, Android 12, Termux, Claude Code (Opus 5.5) v�
 | 4. Java Web (7 pasos, 23 comprobaciones) | 03:14 | 03:45 | Probado en navegador: errores de compilación con pista, nota 5.0 con la solución, re-calificación docente detecta código alterado |
 | 5. React (6 pasos, 21 comprobaciones) | 03:20 | 03:40 | Probado en navegador: nota 5.0 con la solución en 2 s; variantes incorrectas detectadas (sin key, sin preventDefault, push, `>` en vez de `>=`) |
 | 7. Mejoras + repo privado de soluciones + README | 03:46 | 03:52 | «Ejecutar» en Java muestra cada llamada; soluciones movidas a `actividades-recuperacion-docente` (privado) |
-| 8. Revisión visual (escritorio y 390 px) | 03:52 | 04:00 | Capturas en `docs/capturas/`; sin scroll horizontal en móvil |
+| 8. Revisión visual (escritorio y 390 px) | 03:52 | 03:57 | Capturas en `docs/capturas/`; sin scroll horizontal en móvil |
 | 6. Página del docente /verificar/ | 03:16 | 03:45 | Probado: firma válida, comprobante adulterado detectado, verificación rápida del código de 8 caracteres |
 
 ## Estado actual / qué sigue
-- 04:00 TERMINADO: 3 actividades publicadas, probadas en Chromium headless y documentadas.
+- 03:57 TERMINADO: 3 actividades publicadas, probadas en Chromium headless y documentadas.
 - 03:46 Las 3 actividades publicadas y probadas en el navegador. Sigue: re-probar Spring tras corrección de parámetros, README, PDF plan B opcional, capturas.
 - 03:12 Spring Boot funcionando y probado en el navegador (nota y código de verificación OK). Sigue: re-probar corrección de nombres de parámetros, página de verificación, luego Java Web y React.
 
@@ -54,6 +54,6 @@ Entorno: teléfono Kalley Black Z, Android 12, Termux, Claude Code (Opus 5.5) v�
 12. Se omitieron del contenido evaluable: JPA/Security (Spring), JDBC/MySQL (Java Web) y TanStack Query (React), porque requieren servidor/BD reales.
 
 ## Resumen de rendimiento
-- Duración total: ~1 h 25 min (02:36 → ~04:00).
+- Duración total: ~1 h 21 min (02:36 → 03:57).
 - Lo más lento: CheerpJ en Chromium dentro de proot (40–60 s para la 1.ª compilación, 13–25 s las siguientes, ~45–60 s calificar todo Java) y las esperas de despliegue de GitHub Pages (~45 s por cambio).
 - Termux con JDK 17 nativo fue rápido para validar las pruebas Java sin navegador (~6 s por corrida completa).
