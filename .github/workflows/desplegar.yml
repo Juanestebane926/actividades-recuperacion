@@ -1,0 +1,41 @@
+# Construye la imagen del servidor (evaluador real) y la despliega en el VPS por SSH.
+# La compilación (Maven, JDK, npm) ocurre aquí en GitHub, no en el VPS.
+name: Desplegar servidor
+on:
+  push:
+    branches: [main]
+    paths: ['servidor/**', 'evaluador-java/**', 'Dockerfile', '*/actividad.js', '*/codigo/**', 'despliegue/**', '.github/workflows/desplegar.yml']
+  workflow_dispatch:
+concurrency: { group: despliegue, cancel-in-progress: false }
+permissions:
+  contents: read
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    env:
+      IMAGEN: ghcr.io/juanestebane926/actividades-recuperacion:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Preparar SSH
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Copiar la imagen al VPS
+        run: docker save "$IMAGEN" | gzip -1 | ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'cat > /tmp/recuperacion-imagen.tar.gz'
+      - name: Reemplazar el contenedor
+        env:
+          DOCENTE_CLAVE: ${{ secrets.DOCENTE_CLAVE }}
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "IMAGEN='$IMAGEN' DOCENTE_CLAVE='$DOCENTE_CLAVE' bash -s" < despliegue/en-vps.sh
+      - name: Comprobar por HTTPS
+        run: curl -sf --retry 5 --retry-delay 3 https://recuperacion.23-95-192-198.sslip.io/api/estado
