@@ -8,16 +8,24 @@ Entorno: teléfono Kalley Black Z, Android 12, Termux, Claude Code (Opus 5.5) v�
 |---|---|---|---|
 | 1. Investigación de repos | 02:36 | 02:40 | 45 repos listados, 14 clonados y revisados. Resultado en `docs/CURSOS.md` |
 | 2. Elección de herramienta | 02:40 | 02:47 | Búsqueda web + revisión del código de JavaFiddle |
+| 2b. Prototipo CheerpJ (riesgo principal) | 02:42 | 02:46 | javac funciona en Chromium headless: 1.ª compilación 38 s, siguientes ~13 s, ejecución 4 s (en el teléfono) |
+| 3. Motor común + simulador Java + Spring Boot | 02:47 | 03:12 | Stubs de Spring/Servlet, MiniSpring, arnés de pruebas, motor web, actividad Spring (6 pasos, 21 comprobaciones) |
 
 ## Estado actual / qué sigue
-- (se actualiza en cada etapa)
+- 03:12 Spring Boot funcionando y probado en el navegador (nota y código de verificación OK). Sigue: re-probar corrección de nombres de parámetros, página de verificación, luego Java Web y React.
 
 ## Fallos de comandos y herramientas
 - `pdftotext` no estaba instalado → `pkg install poppler` (ok, ~20 s).
+- Prototipo: CheerpJ no acepta subcarpetas en `/str/` (`javac: file not found: /str/r2/...`) → se escriben los archivos planos en `/str/` y se sobrescriben.
+- En CheerpJ la reflexión no entrega nombres de parámetros aunque se compile con `-parameters` → `@RequestParam String nombre` no encontraba el parámetro. Solución: el simulador lee los nombres desde el código fuente del estudiante.
+- Primer arranque del motor: `document.getElementById('app')` se evaluaba antes de existir el `<body>` → se movió a `iniciar()`.
+- `git commit` falló por falta de identidad → se configuró solo en el repo con el correo *noreply* de GitHub (para no exponer el correo personal).
 - `java` no estaba instalado → `pkg install openjdk-17` (ok, ~1-2 min) para probar los arneses Java localmente.
 
 ## Lo lento o limitante del teléfono
-- (pendiente)
+- Chromium headless dentro de proot: la 1.ª compilación Java con CheerpJ tarda 38–51 s; las siguientes ~13–25 s. En un PC normal se espera bastante menos (CheerpJ usa JIT a WebAssembly).
+- Cada publicación en GitHub Pages tarda ~40–60 s en reflejarse y el CDN cachea los .js ~10 min: tuve que agregar `?v=N` a los scripts para probar cambios.
+- Compilar el simulador con el JDK 17 de Termux: ~5 s. Correr las 21 pruebas de Spring localmente: ~6 s.
 
 ## Decisiones tomadas sin consultar
 1. **Un solo repositorio** (`actividades-recuperacion`) con las tres actividades en carpetas y una sola página de GitHub Pages: menos enlaces que administrar.
