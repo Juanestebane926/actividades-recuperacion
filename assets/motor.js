@@ -9,7 +9,7 @@
   const CLAVE = 'rec:' + A.id;
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const app = document.getElementById('app');
+  let app = null;
 
   let estado = null;            // lo que se guarda en el navegador del estudiante
   let originales = {};          // código inicial de cada archivo
@@ -30,6 +30,7 @@
 
   // ------------------------------------------------------------------ arranque
   async function iniciar() {
+    app = document.getElementById('app');
     A.pasos.forEach(p => { if (!p.nPruebas && p.pruebas) p.nPruebas = p.pruebas.length; });
     app.innerHTML = '<div class="portada"><div class="tarjeta"><div class="estado-carga"><span class="girando"></span> Cargando actividad…</div></div></div>';
     const nombres = Object.keys(A.archivos);
