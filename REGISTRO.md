@@ -11,7 +11,12 @@ Entorno: teléfono Kalley Black Z, Android 12, Termux, Claude Code (Opus 5.5) v�
 | 2b. Prototipo CheerpJ (riesgo principal) | 02:42 | 02:46 | javac funciona en Chromium headless: 1.ª compilación 38 s, siguientes ~13 s, ejecución 4 s (en el teléfono) |
 | 3. Motor común + simulador Java + Spring Boot | 02:47 | 03:12 | Stubs de Spring/Servlet, MiniSpring, arnés de pruebas, motor web, actividad Spring (6 pasos, 21 comprobaciones) |
 
+| 4. Java Web (7 pasos, 23 comprobaciones) | 03:14 | 03:45 | Probado en navegador: errores de compilación con pista, nota 5.0 con la solución, re-calificación docente detecta código alterado |
+| 5. React (6 pasos, 21 comprobaciones) | 03:20 | 03:40 | Probado en navegador: nota 5.0 con la solución en 2 s; variantes incorrectas detectadas (sin key, sin preventDefault, push, `>` en vez de `>=`) |
+| 6. Página del docente /verificar/ | 03:16 | 03:45 | Probado: firma válida, comprobante adulterado detectado, verificación rápida del código de 8 caracteres |
+
 ## Estado actual / qué sigue
+- 03:46 Las 3 actividades publicadas y probadas en el navegador. Sigue: re-probar Spring tras corrección de parámetros, README, PDF plan B opcional, capturas.
 - 03:12 Spring Boot funcionando y probado en el navegador (nota y código de verificación OK). Sigue: re-probar corrección de nombres de parámetros, página de verificación, luego Java Web y React.
 
 ## Fallos de comandos y herramientas
