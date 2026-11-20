@@ -41,6 +41,16 @@ La navegación (‹ Anterior, los pasos, Siguiente ›) va en la barra superior.
 
 **Nota** = 5 × el promedio de los pasos (pruebas que pasan ÷ pruebas del paso), redondeada a una décima. Se aprueba con 3.0.
 
+## Despliegue actual
+
+- **Página:** GitHub Pages (`https://juanestebane926.github.io/actividades-recuperacion/`). `assets/config.js` dice a qué API llamar.
+- **API:** contenedor `recuperacion` en el VPS, detrás de Caddy en `https://recuperacion.23-95-192-198.sslip.io`. Escucha solo en `127.0.0.1:3010` y tiene un tope de 1,5 CPU y 900 MB de RAM.
+- **Despliegue automático:** cada push a `main` que toque el servidor, el evaluador o las actividades dispara `.github/workflows/desplegar.yml`. GitHub compila la imagen, la copia por SSH y reemplaza el contenedor con `despliegue/en-vps.sh`. Los secretos del repo son `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (llave solo de despliegue), `VPS_KNOWN_HOSTS` y `DOCENTE_CLAVE`.
+- **Para quitarlo del VPS:**
+  - `docker rm -f recuperacion && docker volume rm recuperacion-datos`;
+  - borrar el bloque `recuperacion.23-95-192-198.sslip.io` del Caddyfile y recargar Caddy;
+  - borrar la línea `github-actions-actividades-recuperacion` de `~/.ssh/authorized_keys`.
+
 ## Cómo ponerlo en marcha
 
 ### Con Docker (recomendado)
