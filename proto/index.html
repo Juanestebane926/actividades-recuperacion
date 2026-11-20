@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><title>proto</title>
+<script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script></head>
+<body><pre id="console"></pre><pre id="log"></pre>
+<script>
+const log = s => document.getElementById('log').textContent += s + "\n";
+window.result = null;
+(async () => {
+ try {
+  const t0 = performance.now();
+  await cheerpjInit({ status: 'none', version: 8 });
+  log('init ' + Math.round(performance.now()-t0));
+  const src = `public class Main { public static void main(String[] a) throws Exception {
+    java.io.PrintStream p = new java.io.PrintStream(new java.io.FileOutputStream("/files/out.txt"));
+    p.println("hola " + (2+3)); p.close(); System.out.println("stdout ok"); } }`;
+  cheerpjAddStringFile('/str/Main.java', new TextEncoder().encode(src));
+  const t1 = performance.now();
+  const code = await cheerpjRunMain('com.sun.tools.javac.Main', '/app/assets/java/tools.jar:/files/', '/str/Main.java', '-d', '/files/', '-Xstdout', '/files/javac.txt');
+  log('javac exit ' + code + ' in ' + Math.round(performance.now()-t1));
+  const t2 = performance.now();
+  const c2 = await cheerpjRunMain('Main', '/files/');
+  log('run exit ' + c2 + ' in ' + Math.round(performance.now()-t2));
+  const blob = await cjFileBlob('/files/out.txt');
+  log('out: ' + await blob.text());
+  // second compile timing
+  cheerpjAddStringFile('/str/B.java', new TextEncoder().encode('public class B { int x = "a"; }'));
+  const t3 = performance.now();
+  const c3 = await cheerpjRunMain('com.sun.tools.javac.Main', '/app/assets/java/tools.jar:/files/', '/str/B.java', '-d', '/files/', '-Xstdout', '/files/javac2.txt');
+  log('javac2 exit ' + c3 + ' in ' + Math.round(performance.now()-t3));
+  log('err: ' + await (await cjFileBlob('/files/javac2.txt')).text());
+  window.result = 'done';
+ } catch (e) { log('ERR ' + e); window.result = 'err'; }
+})();
+</script></body></html>
