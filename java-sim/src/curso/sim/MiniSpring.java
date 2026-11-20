@@ -156,7 +156,7 @@ public class MiniSpring {
         Method m = mejor.m;
         Class<?>[] tipos = m.getParameterTypes();
         Annotation[][] anns = m.getParameterAnnotations();
-        Parameter[] ps = m.getParameters();
+        String[] nombresParam = nombresParametros(m);
         Object[] args = new Object[tipos.length];
         for (int i = 0; i < tipos.length; i++) {
             PathVariable pv = null; RequestParam rp = null; RequestBody rb = null;
@@ -167,13 +167,13 @@ public class MiniSpring {
             }
             try {
                 if (pv != null) {
-                    String n = !pv.value().isEmpty() ? pv.value() : !pv.name().isEmpty() ? pv.name() : ps[i].getName();
+                    String n = !pv.value().isEmpty() ? pv.value() : !pv.name().isEmpty() ? pv.name() : nombresParam[i];
                     String val = vars.get(n);
                     if (val == null && vars.size() == 1) val = vars.values().iterator().next();
                     if (val == null) return reg(new Respuesta(metodo, url, 500, null, "{\"error\":\"@PathVariable '" + n + "' no aparece en la ruta " + mejor.patron + "\"}"));
                     args[i] = Convertir.texto(val, tipos[i]);
                 } else if (rp != null) {
-                    String n = !rp.value().isEmpty() ? rp.value() : !rp.name().isEmpty() ? rp.name() : ps[i].getName();
+                    String n = !rp.value().isEmpty() ? rp.value() : !rp.name().isEmpty() ? rp.name() : nombresParam[i];
                     String val = params.get(n);
                     if (val == null && !ValueConstants.DEFAULT_NONE.equals(rp.defaultValue())) val = rp.defaultValue();
                     if (val == null && rp.required()) return reg(new Respuesta(metodo, url, 400, null, "{\"error\":\"Bad Request\",\"detalle\":\"Falta el parámetro obligatorio '" + n + "'\"}"));
@@ -210,6 +210,36 @@ public class MiniSpring {
         String texto = cuerpo == null ? "" : cuerpo instanceof String ? (String) cuerpo : Json.escribir(cuerpo);
         return reg(new Respuesta(metodo, url, status, cuerpo, texto));
     }
+    /**
+     * Nombres de los parámetros de un método. Si la JVM no los guarda (pasa en CheerpJ),
+     * se leen del código fuente del estudiante.
+     */
+    String[] nombresParametros(Method m) {
+        Parameter[] ps = m.getParameters();
+        String[] r = new String[ps.length];
+        boolean faltan = false;
+        for (int i = 0; i < ps.length; i++) { r[i] = ps[i].getName(); if (!ps[i].isNamePresent() || r[i].matches("arg\\d+")) faltan = true; }
+        if (!faltan) return r;
+        String src = ctx.codigo(m.getDeclaringClass().getSimpleName() + ".java");
+        java.util.regex.Matcher mt = java.util.regex.Pattern.compile("\\b" + m.getName() + "\\s*\\(").matcher(src);
+        while (mt.find()) {
+            int ini = mt.end(), prof = 1, k = ini;
+            while (k < src.length() && prof > 0) { char ch = src.charAt(k); if (ch == '(') prof++; else if (ch == ')') prof--; k++; }
+            String lista = src.substring(ini, Math.max(ini, k - 1));
+            lista = lista.replaceAll("@\\w+(\\.\\w+)*\\s*(\\([^()]*\\))?", " ").replaceAll("<[^<>]*>", "").replaceAll("\\bfinal\\b", " ");
+            String[] partes = lista.trim().isEmpty() ? new String[0] : lista.split(",");
+            if (partes.length != ps.length) continue;
+            boolean ok = true;
+            for (int i = 0; i < partes.length; i++) {
+                String[] tk = partes[i].trim().split("\\s+");
+                if (tk.length < 2) { ok = false; break; }
+                r[i] = tk[tk.length - 1];
+            }
+            if (ok) return r;
+        }
+        return r;
+    }
+
     private Respuesta reg(Respuesta r) { ctx.demo(r.resumen()); return r; }
     public Respuesta get(String url) { return peticion("GET", url, null); }
     public Respuesta post(String url, String json) { return peticion("POST", url, json); }

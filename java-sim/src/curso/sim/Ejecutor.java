@@ -23,6 +23,7 @@ public class Ejecutor {
         List<String> fuentes = new ArrayList<String>(Arrays.asList(a).subList(5, a.length));
         new File(dir).mkdirs();
         List<String> args = new ArrayList<String>(Arrays.asList("-encoding", "UTF-8", "-parameters", "-g", "-nowarn", "-cp", cp, "-d", dir));
+        if (System.getProperty("sinParametros") != null) args.remove("-parameters");
         args.addAll(fuentes);
         StringWriter errores = new StringWriter();
         long t0 = System.currentTimeMillis();
