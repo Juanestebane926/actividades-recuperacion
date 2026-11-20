@@ -217,9 +217,7 @@ public class MiniSpring {
     String[] nombresParametros(Method m) {
         Parameter[] ps = m.getParameters();
         String[] r = new String[ps.length];
-        boolean faltan = false;
-        for (int i = 0; i < ps.length; i++) { r[i] = ps[i].getName(); if (!ps[i].isNamePresent() || r[i].matches("arg\\d+")) faltan = true; }
-        if (!faltan) return r;
+        for (int i = 0; i < ps.length; i++) r[i] = ps[i].getName();
         String src = ctx.codigo(m.getDeclaringClass().getSimpleName() + ".java");
         java.util.regex.Matcher mt = java.util.regex.Pattern.compile("\\b" + m.getName() + "\\s*\\(").matcher(src);
         while (mt.find()) {

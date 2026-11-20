@@ -5,7 +5,7 @@
 window.MotorJava = (function () {
   'use strict';
   const base = new URL('../assets/java/', location.href).pathname;
-  const CP = '/app' + base + 'tools.jar:/app' + base + 'sim.jar';
+  const CP = '/app' + base + 'tools.jar:/app' + base + (window.SIM_JAR || 'sim.jar');
   let inicio = null, n = 0, cola = Promise.resolve(), calentado = false;
   const enc = new TextEncoder();
 
