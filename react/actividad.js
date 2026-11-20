@@ -352,7 +352,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             t.escribir(n, 'Sofía');
             t.escribir(k, '4.2');
             t.enviar(t.$('form'));
-            t.igual(4, items(t).length, 'Cantidad de estudiantes después de agregar');
+            t.igual(4, items(t).length, 'Cantidad de estudiantes después de agregar (usa setEstudiantes([...estudiantes, conId]): con push React no se entera del cambio)');
             t.igual('Mostrando 4 de 4', conteo(t), 'Conteo después de agregar');
             t.si(items(t).some(li => t.texto(li).includes('Sofía')), 'Sofía debería aparecer en la lista.');
           }],

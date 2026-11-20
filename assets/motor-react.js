@@ -168,16 +168,17 @@ window.MotorReact = (function () {
     const errorOriginal = win.console.error;
     win.console.error = (...a) => { avisos.push(a.map(String).join(' ')); };
     win.console.warn = () => {};
-    let comps;
-    try {
-      comps = new win.Function('React', 'ReactDOM', PRELUDIO + tr.codigo + exportar(A))(win.React, win.ReactDOM);
-    } catch (e) {
+    // Cada prueba usa una copia nueva del código (así una prueba no contamina a la siguiente)
+    const cargar = () => new win.Function('React', 'ReactDOM', PRELUDIO + tr.codigo + exportar(A))(win.React, win.ReactDOM);
+    try { cargar(); } catch (e) {
       f.remove();
       return { errores: [{ archivo: '', linea: 0, mensaje: 'Tu código lanzó un error al cargarse: ' + e.message }], resultados: [] };
     }
     const resultados = [];
     for (const [nombre, fn] of paso.pruebas) {
-      const t = ayudante(win, comps, archivos, errores);
+      Array.from(win.document.body.children).forEach(n => { try { win.ReactDOM.unmountComponentAtNode(n); } catch (e) { } n.remove(); });
+      win.document.title = '';
+      const t = ayudante(win, cargar(), archivos, errores);
       avisos.length = 0;
       t.avisos = avisos;
       try {
