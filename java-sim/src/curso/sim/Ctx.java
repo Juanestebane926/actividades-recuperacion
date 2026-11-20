@@ -98,11 +98,44 @@ public class Ctx {
                 for (int i = 0; i < ps.length; i++) if (!compatible(ps[i], args[i])) ok = false;
                 if (!ok) continue;
                 if (inst == null && !Modifier.isStatic(m.getModifiers())) throw new Falla("El método " + metodo + " debe ser static.");
-                try { m.setAccessible(true); return m.invoke(inst, adaptar(ps, args)); }
-                catch (InvocationTargetException e) { throw new Falla("Tu método " + metodo + " lanzó un error: " + desc(e.getCause())); }
+                try {
+                    m.setAccessible(true);
+                    Object r = m.invoke(inst, adaptar(ps, args));
+                    if (demos.size() < 40) demo((inst == null ? c.getSimpleName() : c.getSimpleName().substring(0, 1).toLowerCase() + c.getSimpleName().substring(1)) + "." + metodo + "(" + argumentos(args) + ")  →  " + resumen(r));
+                    return r;
+                }
+                catch (InvocationTargetException e) { demo(c.getSimpleName() + "." + metodo + "(" + argumentos(args) + ")  →  lanzó " + desc(e.getCause())); throw new Falla("Tu método " + metodo + " lanzó un error: " + desc(e.getCause())); }
                 catch (IllegalAccessException e) { throw new RuntimeException(e); }
             }
         throw new Falla("No encontré el método " + firma(metodo, args) + " en " + c.getSimpleName() + ". Revisa el nombre (mayúsculas incluidas) y los parámetros.");
+    }
+
+    static String argumentos(Object[] args) {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < args.length; i++) {
+            if (i > 0) b.append(", ");
+            Object a = args[i];
+            if (a instanceof double[]) { b.append('{'); double[] d = (double[]) a; for (int k = 0; k < d.length; k++) { if (k > 0) b.append(", "); b.append(d[k]); } b.append('}'); }
+            else if (a instanceof Long) b.append(a).append('L');
+            else b.append(resumen(a));
+        }
+        return b.toString();
+    }
+    static String resumen(Object r) {
+        if (r == null) return "null";
+        if (r instanceof String) return "\"" + r + "\"";
+        if (r instanceof Number || r instanceof Boolean) return String.valueOf(r);
+        if (r instanceof java.util.Collection) {
+            StringBuilder b = new StringBuilder("[");
+            int n = 0;
+            for (Object x : (java.util.Collection<?>) r) { if (n++ > 0) b.append(", "); if (n > 4) { b.append("…"); break; } b.append(resumen(x)); }
+            return b.append("] (").append(((java.util.Collection<?>) r).size()).append(" elementos)").toString();
+        }
+        try {
+            java.lang.reflect.Method ts = r.getClass().getMethod("toString");
+            if (ts.getDeclaringClass() != Object.class) return r.toString();
+        } catch (Exception e) { }
+        try { return r.getClass().getSimpleName() + Json.escribir(r); } catch (Exception e) { return r.getClass().getSimpleName(); }
     }
 
     public Object campo(Object o, String nombre) {

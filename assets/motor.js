@@ -337,7 +337,7 @@
         h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? '✔' : '✘'}</span><div><div class="nombre">${esc(r.nombre)}</div>${r.ok ? '' : '<div class="msg">' + esc(r.mensaje) + '</div>'}</div></div>`).join('');
       }
       if (res.consola && res.consola.length) {
-        h += `<div style="margin-top:8px;font-weight:600;font-size:14px">${modo === 'ejecutar' ? (A.motor === 'java' ? 'Peticiones simuladas y lo que respondió tu código:' : 'Consola:') : 'Detalle de la ejecución:'}</div><div class="consola">${esc(res.consola.join('\n'))}</div>`;
+        h += `<div style="margin-top:8px;font-weight:600;font-size:14px">${modo === 'ejecutar' ? (A.motor === 'java' ? 'Lo que se ejecutó (llamadas y peticiones simuladas) y lo que respondió tu código:' : 'Consola:') : 'Detalle de la ejecución:'}</div><div class="consola">${esc(res.consola.join('\n'))}</div>`;
       } else if (modo === 'ejecutar' && !res.preview) {
         h += '<p class="vacio">Tu código compiló, pero no produjo salida.</p>';
       }
