@@ -14,7 +14,7 @@ window.result = null;
     p.println("hola " + (2+3)); p.close(); System.out.println("stdout ok"); } }`;
   cheerpjAddStringFile('/str/Main.java', new TextEncoder().encode(src));
   const t1 = performance.now();
-  const code = await cheerpjRunMain('com.sun.tools.javac.Main', '/app/assets/java/tools.jar:/files/', '/str/Main.java', '-d', '/files/', '-Xstdout', '/files/javac.txt');
+  const code = await cheerpjRunMain('com.sun.tools.javac.Main', '/app/actividades-recuperacion/assets/java/tools.jar:/files/', '/str/Main.java', '-d', '/files/', '-Xstdout', '/files/javac.txt');
   log('javac exit ' + code + ' in ' + Math.round(performance.now()-t1));
   const t2 = performance.now();
   const c2 = await cheerpjRunMain('Main', '/files/');
@@ -24,7 +24,7 @@ window.result = null;
   // second compile timing
   cheerpjAddStringFile('/str/B.java', new TextEncoder().encode('public class B { int x = "a"; }'));
   const t3 = performance.now();
-  const c3 = await cheerpjRunMain('com.sun.tools.javac.Main', '/app/assets/java/tools.jar:/files/', '/str/B.java', '-d', '/files/', '-Xstdout', '/files/javac2.txt');
+  const c3 = await cheerpjRunMain('com.sun.tools.javac.Main', '/app/actividades-recuperacion/assets/java/tools.jar:/files/', '/str/B.java', '-d', '/files/', '-Xstdout', '/files/javac2.txt');
   log('javac2 exit ' + c3 + ' in ' + Math.round(performance.now()-t3));
   log('err: ' + await (await cjFileBlob('/files/javac2.txt')).text());
   window.result = 'done';
