@@ -29,3 +29,16 @@ jobs:
             ghcr.io/juanestebane926/actividades-recuperacion:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # Copia de la imagen como artefacto (3 días): el VPS la descarga con `docker load`
+      # sin necesitar permisos de lectura en ghcr.io.
+      - name: Guardar la imagen como archivo
+        run: |
+          docker pull ghcr.io/juanestebane926/actividades-recuperacion:${{ github.sha }}
+          docker save ghcr.io/juanestebane926/actividades-recuperacion:${{ github.sha }} | gzip -1 > imagen.tar.gz
+          ls -lh imagen.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imagen
+          path: imagen.tar.gz
+          retention-days: 3
+          compression-level: 0
