@@ -1,0 +1,4 @@
+evaluador-java/build/
+servidor/node_modules/
+servidor/datos/
+*.log

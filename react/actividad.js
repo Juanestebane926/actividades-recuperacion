@@ -1,26 +1,5 @@
 (function () {
   const LISTA = "[{ id: 1, nombre: 'Ana', nota: 4.6 }, { id: 2, nombre: 'Pedro', nota: 3.1 }, { id: 3, nombre: 'Luisa', nota: 2.8 }]";
-  const datos = () => [{ id: 1, nombre: 'Ana', nota: 4.6 }, { id: 2, nombre: 'Pedro', nota: 3.1 }, { id: 3, nombre: 'Luisa', nota: 2.8 }];
-
-  // ---------- ayudas para las pruebas ----------
-  function badge(t, raiz) {
-    const s = t.$('span', raiz);
-    t.si(s, 'EstadoBadge debe devolver un <span>.');
-    return s;
-  }
-  function items(t) { return t.$$('li'); }
-  function boton(t) {
-    const b = t.$('button');
-    t.si(b, 'No encontré el <button>.');
-    return b;
-  }
-  function conteo(t) { return t.texto(t.$('.conteo')); }
-  function inputs(t) {
-    const n = t.$('input[name="nombre"]') || t.$$('input')[0];
-    const k = t.$('input[name="nota"]') || t.$$('input')[1];
-    t.si(n && k, 'El formulario debe tener dos <input>: nombre y nota.');
-    return [n, k];
-  }
 
   window.ACTIVIDAD = {
     id: 'react',
@@ -30,7 +9,7 @@
     temas: ['Componentes y props', 'Template literals', 'Render condicional (ternario y &&)', 'Listas con map y key', 'filter', 'useState y eventos', 'Formularios controlados', 'useEffect y spread'],
     duracion: '60 a 90 minutos',
     motor: 'react',
-    aviso: '⚛️ Tu código JSX se ejecuta de verdad con <b>React 18</b> dentro del navegador. Cada componente está en su propio archivo (como en Vite); no hace falta cambiar los <code>import</code>: aquí todos los archivos se cargan juntos.',
+    aviso: '⚛️ Tu código se ejecuta <b>de verdad</b>: cada componente está en su propio archivo con sus <code>import</code> y <code>export</code>, como en un proyecto de Vite. <b>▶ Ejecutar</b> arma tu app y la muestra funcionando. <b>✔ Comprobar</b> corre pruebas con <b>React Testing Library</b> en el servidor del curso. Si olvidas un <code>import</code> o un <code>export</code>, verás el mismo error que en Vite.',
     componentes: ['Saludo', 'Perfil', 'EstadoBadge', 'ListaEstudiantes', 'FiltroAprobados', 'FormularioEstudiante', 'App'],
     archivos: {
       'Saludo.jsx': { ruta: 'codigo/Saludo.jsx' },
@@ -43,6 +22,8 @@
     pasos: [
       {
         id: 'r1',
+        nPruebas: 3,
+        nPruebas: 3,
         titulo: 'Componentes y props',
         archivos: ['Saludo.jsx'],
         compilar: ['Saludo.jsx'],
@@ -67,28 +48,12 @@ const info = \`\${nombre} tiene \${edad} años\`;   // "Juan tiene 20 años"</co
         pistas: [
           'En los dos espacios de Saludo va la misma palabra: <code>nombre</code>.',
           'Dentro de las comillas invertidas del template literal escribe: <code>${nombre} tiene ${edad} años</code>'
-        ],
-        pruebas: [
-          ['<Saludo nombre="Ana" /> muestra "Hola, Ana"', t => {
-            const d = t.montar(t.h(t.comp('Saludo'), { nombre: 'Ana' }));
-            const h2 = t.$('h2', d);
-            t.si(h2, 'Saludo debe devolver un <h2>.');
-            t.igual('Hola, Ana', t.texto(h2), 'Texto del <h2>');
-          }],
-          ['Saludo usa la prop (no un nombre fijo)', t => {
-            const d = t.montar(t.h(t.comp('Saludo'), { nombre: 'Valentina' }));
-            t.igual('Hola, Valentina', t.texto(t.$('h2', d)), 'Con nombre="Valentina", el <h2>');
-          }],
-          ['<Perfil nombre="Ana" edad={18} /> muestra "Ana tiene 18 años"', t => {
-            const d = t.montar(t.h(t.comp('Perfil'), { nombre: 'Ana', edad: 18 }));
-            t.igual('Ana tiene 18 años', t.texto(t.$('p', d)), 'Texto del <p>');
-            const d2 = t.montar(t.h(t.comp('Perfil'), { nombre: 'Luis', edad: 25 }));
-            t.igual('Luis tiene 25 años', t.texto(t.$('p', d2)), 'Con Luis y 25, el texto');
-          }]
         ]
       },
       {
         id: 'r2',
+        nPruebas: 3,
+        nPruebas: 3,
         titulo: 'Render condicional: EstadoBadge',
         archivos: ['EstadoBadge.jsx'],
         compilar: ['EstadoBadge.jsx'],
@@ -112,26 +77,12 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
         pistas: [
           '<code>const aprobado = nota &gt;= 3.0;</code>',
           'El texto: <code>{aprobado ? \'Aprobado\' : \'Reprobado\'}</code>'
-        ],
-        pruebas: [
-          ['Nota 4.5 → "Aprobado" con clase badge-ok', t => {
-            const s = badge(t, t.montar(t.h(t.comp('EstadoBadge'), { nota: 4.5 })));
-            t.igual('Aprobado', t.texto(s), 'Texto');
-            t.si(s.classList.contains('badge-ok') && s.classList.contains('badge'), 'La clase debe ser "badge badge-ok" (tiene: "' + s.className + '").');
-          }],
-          ['Nota 2.8 → "Reprobado" con clase badge-mal', t => {
-            const s = badge(t, t.montar(t.h(t.comp('EstadoBadge'), { nota: 2.8 })));
-            t.igual('Reprobado', t.texto(s), 'Texto');
-            t.si(s.classList.contains('badge-mal'), 'La clase debe ser "badge badge-mal".');
-          }],
-          ['Nota 3.0 exacta → "Aprobado"', t => {
-            const s = badge(t, t.montar(t.h(t.comp('EstadoBadge'), { nota: 3.0 })));
-            t.igual('Aprobado', t.texto(s), 'Con nota 3.0 (usa >=)');
-          }]
         ]
       },
       {
         id: 'r3',
+        nPruebas: 4,
+        nPruebas: 4,
         titulo: 'Listas con map y key',
         archivos: ['ListaEstudiantes.jsx', 'EstadoBadge.jsx'],
         compilar: ['EstadoBadge.jsx', 'ListaEstudiantes.jsx'],
@@ -157,37 +108,12 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
         pistas: [
           'El tamaño vacío es <code>0</code>. El método para recorrer y transformar es <code>map</code>.',
           'La key: <code>key={est.id}</code>. La nota: <code>nota={est.nota}</code>'
-        ],
-        pruebas: [
-          ['Muestra un <li> por estudiante con nombre y nota', t => {
-            t.montar(t.h(t.comp('ListaEstudiantes'), { estudiantes: datos() }));
-            const li = items(t);
-            t.igual(3, li.length, 'Cantidad de <li>');
-            t.si(t.texto(li[0]).includes('Ana') && t.texto(li[0]).includes('4.6'), 'El primer <li> debe mostrar "Ana - 4.6". Muestra: "' + t.texto(li[0]) + '".');
-            t.si(t.texto(li[2]).includes('Luisa'), 'El tercer <li> debe ser Luisa.');
-          }],
-          ['Cada estudiante tiene su EstadoBadge correcto', t => {
-            t.montar(t.h(t.comp('ListaEstudiantes'), { estudiantes: datos() }));
-            const li = items(t);
-            t.si(li.length === 3, 'Primero haz que se vean los 3 <li>.');
-            t.igual('Aprobado', t.texto(t.$('span', li[0])), 'Badge de Ana');
-            t.igual('Reprobado', t.texto(t.$('span', li[2])), 'Badge de Luisa (nota 2.8)');
-          }],
-          ['Usa key única en cada <li>', t => {
-            t.montar(t.h(t.comp('ListaEstudiantes'), { estudiantes: datos() }));
-            const aviso = t.avisos.find(a => /unique "key"|"key" prop/i.test(a));
-            t.si(!aviso, 'React avisa que falta la key: agrega key={est.id} al <li>.');
-            t.si(/key\s*=\s*\{\s*est\.id\s*\}/.test(t.fuente('ListaEstudiantes.jsx')), 'Usa el id como key: key={est.id}.');
-          }],
-          ['Lista vacía → "No hay estudiantes"', t => {
-            const d = t.montar(t.h(t.comp('ListaEstudiantes'), { estudiantes: [] }));
-            t.si(t.texto(d).includes('No hay estudiantes'), 'Con una lista vacía debe aparecer "No hay estudiantes".');
-            t.igual(0, items(t).length, 'Cantidad de <li> con la lista vacía');
-          }]
         ]
       },
       {
         id: 'r4',
+        nPruebas: 3,
+        nPruebas: 3,
         titulo: 'Estado con useState: filtrar aprobados',
         archivos: ['FiltroAprobados.jsx', 'ListaEstudiantes.jsx'],
         compilar: ['EstadoBadge.jsx', 'ListaEstudiantes.jsx', 'FiltroAprobados.jsx'],
@@ -212,31 +138,12 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
         pistas: [
           '<code>useState(false)</code> y <code>estudiantes.filter(...)</code>',
           'En el onClick: <code>setSoloAprobados(!soloAprobados)</code>'
-        ],
-        pruebas: [
-          ['Al inicio muestra todos: "Mostrando 3 de 3"', t => {
-            t.montar(t.h(t.comp('FiltroAprobados'), { estudiantes: datos() }));
-            t.igual('Mostrando 3 de 3', conteo(t), 'Texto del conteo');
-            t.igual(3, items(t).length, 'Cantidad de <li>');
-          }],
-          ['Un clic muestra solo los aprobados', t => {
-            t.montar(t.h(t.comp('FiltroAprobados'), { estudiantes: datos() }));
-            t.click(boton(t));
-            t.igual('Mostrando 2 de 3', conteo(t), 'Después de un clic, el conteo');
-            const nombres = items(t).map(li => t.texto(li));
-            t.si(!nombres.some(n => n.includes('Luisa')), 'Luisa (2.8) no debería aparecer al filtrar aprobados.');
-            t.igual('Ver todos', t.texto(boton(t)), 'Texto del botón después del clic');
-          }],
-          ['Otro clic vuelve a mostrar todos', t => {
-            t.montar(t.h(t.comp('FiltroAprobados'), { estudiantes: datos() }));
-            t.click(boton(t));
-            t.click(boton(t));
-            t.igual('Mostrando 3 de 3', conteo(t), 'Después de dos clics, el conteo');
-          }]
         ]
       },
       {
         id: 'r5',
+        nPruebas: 4,
+        nPruebas: 4,
         titulo: 'Formularios controlados',
         archivos: ['FormularioEstudiante.jsx'],
         compilar: ['FormularioEstudiante.jsx'],
@@ -266,53 +173,12 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
           '<code>e.preventDefault();</code> y <code>nota: Number(nota)</code>',
           'Para limpiar: <code>setNota(\'\')</code> (comillas vacías).',
           'Los onChange: <code>setNombre(e.target.value)</code> y <code>setNota(e.target.value)</code>'
-        ],
-        pruebas: [
-          ['Los inputs son controlados (lo que escribes se ve)', t => {
-            t.montar(t.h(t.comp('FormularioEstudiante'), { onAgregar: () => {} }));
-            const [n, k] = inputs(t);
-            t.escribir(n, 'Sofía');
-            t.escribir(k, '4.2');
-            const [n2, k2] = inputs(t);
-            t.igual('Sofía', n2.value, 'Valor del input nombre después de escribir');
-            t.igual('4.2', k2.value, 'Valor del input nota después de escribir');
-          }],
-          ['Al enviar llama onAgregar con la nota como número', t => {
-            const recibidos = [];
-            t.montar(t.h(t.comp('FormularioEstudiante'), { onAgregar: e => recibidos.push(e) }));
-            const [n, k] = inputs(t);
-            t.escribir(n, 'Sofía');
-            t.escribir(k, '4.2');
-            const prevenido = t.enviar(t.$('form'));
-            t.si(prevenido, 'Llama e.preventDefault() al enviar (si no, la página se recarga).');
-            t.igual(1, recibidos.length, 'Veces que se llamó onAgregar');
-            t.igual('Sofía', recibidos[0].nombre, 'nombre enviado');
-            t.si(typeof recibidos[0].nota === 'number', 'La nota debe enviarse como número (Number(nota)), llegó como ' + typeof recibidos[0].nota + '.');
-            t.igual(4.2, recibidos[0].nota, 'nota enviada');
-          }],
-          ['Después de enviar, el formulario queda limpio', t => {
-            t.montar(t.h(t.comp('FormularioEstudiante'), { onAgregar: () => {} }));
-            const [n, k] = inputs(t);
-            t.escribir(n, 'Sofía');
-            t.escribir(k, '4.2');
-            t.enviar(t.$('form'));
-            const [n2, k2] = inputs(t);
-            t.igual('', n2.value, 'Input nombre después de enviar');
-            t.igual('', k2.value, 'Input nota después de enviar');
-          }],
-          ['Nombre vacío → muestra "El nombre es obligatorio" y no envía', t => {
-            const recibidos = [];
-            t.montar(t.h(t.comp('FormularioEstudiante'), { onAgregar: e => recibidos.push(e) }));
-            const [, k] = inputs(t);
-            t.escribir(k, '3');
-            t.enviar(t.$('form'));
-            t.igual(0, recibidos.length, 'Con nombre vacío, veces que se llamó onAgregar');
-            t.si(t.texto(t.$('form')).includes('El nombre es obligatorio'), 'Debe verse el mensaje "El nombre es obligatorio".');
-          }]
         ]
       },
       {
         id: 'r6',
+        nPruebas: 4,
+        nPruebas: 4,
         titulo: 'Integración: la App completa con useEffect',
         archivos: ['App.jsx', 'FormularioEstudiante.jsx', 'FiltroAprobados.jsx'],
         compilar: ['Saludo.jsx', 'EstadoBadge.jsx', 'ListaEstudiantes.jsx', 'FiltroAprobados.jsx', 'FormularioEstudiante.jsx', 'App.jsx'],
@@ -339,43 +205,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
           '<code>useState(INICIALES)</code> y <code>[estudiantes]</code> como dependencias.',
           '<code>setEstudiantes([...estudiantes, conId]);</code>',
           '<code>&lt;FormularioEstudiante onAgregar={agregar} /&gt;</code> (sin paréntesis: pasas la función, no la llamas).'
-        ],
-        pruebas: [
-          ['La App muestra el título y los 3 estudiantes iniciales', t => {
-            const d = t.montar(t.h(t.comp('App')));
-            t.si(t.texto(t.$('h1', d)).includes('Gestión de Estudiantes'), 'Falta el <h1> "Gestión de Estudiantes".');
-            t.igual(3, items(t).length, 'Cantidad de estudiantes en la lista');
-          }],
-          ['Agregar desde el formulario suma un estudiante a la lista', t => {
-            t.montar(t.h(t.comp('App')));
-            const [n, k] = inputs(t);
-            t.escribir(n, 'Sofía');
-            t.escribir(k, '4.2');
-            t.enviar(t.$('form'));
-            t.igual(4, items(t).length, 'Cantidad de estudiantes después de agregar (usa setEstudiantes([...estudiantes, conId]): con push React no se entera del cambio)');
-            t.igual('Mostrando 4 de 4', conteo(t), 'Conteo después de agregar');
-            t.si(items(t).some(li => t.texto(li).includes('Sofía')), 'Sofía debería aparecer en la lista.');
-          }],
-          ['useEffect actualiza el título de la pestaña', async t => {
-            t.montar(t.h(t.comp('App')));
-            await t.esperar(60);
-            t.igual('Estudiantes: 3', t.doc.title, 'Título al inicio');
-            const [n, k] = inputs(t);
-            t.escribir(n, 'Sofía');
-            t.escribir(k, '2.0');
-            t.enviar(t.$('form'));
-            await t.esperar(60);
-            t.igual('Estudiantes: 4', t.doc.title, 'Título después de agregar (revisa las dependencias del useEffect)');
-          }],
-          ['El filtro sigue funcionando con los nuevos estudiantes', t => {
-            t.montar(t.h(t.comp('App')));
-            const [n, k] = inputs(t);
-            t.escribir(n, 'Mario');
-            t.escribir(k, '1.5');
-            t.enviar(t.$('form'));
-            t.click(t.$$('button').find(b => /aprobados|todos/i.test(b.textContent)));
-            t.igual('Mostrando 2 de 4', conteo(t), 'Conteo al filtrar aprobados después de agregar una nota 1.5');
-          }]
         ]
       }
     ]

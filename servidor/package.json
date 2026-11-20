@@ -1,0 +1,23 @@
+{
+  "name": "actividades-recuperacion-servidor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de las actividades de recuperación: ejecuta el código de los estudiantes de verdad (javac + JUnit + Spring Boot/Tomcat, y React con Testing Library) y guarda avance y notas en SQLite.",
+  "type": "module",
+  "main": "src/servidor.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node src/servidor.js",
+    "probar": "node pruebas/probar-soluciones.mjs"
+  },
+  "dependencies": {
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/react": "16.1.0",
+    "codemirror": "5.65.16",
+    "esbuild": "0.24.2",
+    "expect": "29.7.0",
+    "jsdom": "25.0.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  }
+}

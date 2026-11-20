@@ -7,7 +7,7 @@ window.ACTIVIDAD = {
   duracion: '60 a 90 minutos',
   motor: 'java',
   javaCurso: 'web',
-  aviso: '⚙️ <b>Importante:</b> tu código Java se compila de verdad en el navegador (con javac). Como Tomcat no puede correr dentro de una página web, las peticiones HTTP al servlet se <b>simulan</b>: se crea tu servlet, se llama <code>init()</code> y luego <code>doGet</code>/<code>doPost</code> con un request y un response de prueba, igual que lo haría Tomcat. La base de datos MySQL se reemplaza por un <code>ArrayList</code>. La <b>primera</b> compilación puede tardar hasta un minuto; después es más rápida. Se usa Java 8 (sin <code>var</code>).',
+  aviso: '⚙️ Tu código se ejecuta <b>de verdad</b> en el servidor del curso: se compila con <code>javac</code> (Java 17) y los servlets se despliegan en un <b>Tomcat 9</b> real (con <code>javax.servlet</code>, como en NetBeans). <b>▶ Ejecutar</b> corre un programa de prueba o, en los pasos del servlet, le envía a Tomcat las peticiones HTTP de la pestaña <code>peticiones.http</code> (puedes cambiarlas). <b>✔ Comprobar</b> corre pruebas JUnit 5. La base de datos MySQL se reemplaza por un <code>ArrayList</code>.',
   archivos: {
     'Calificaciones.java': { ruta: 'codigo/Calificaciones.java' },
     'Estadisticas.java': { ruta: 'codigo/Estadisticas.java' },
@@ -18,6 +18,8 @@ window.ACTIVIDAD = {
   pasos: [
     {
       id: 'w1',
+      ejecutar: {"codigo": "double[] notas = {4.5, 3.0, 2.9, 4.8};\nfor (double n : notas) {\n    System.out.println(n + \" -> estado: \" + Calificaciones.estado(n) + \", nivel: \" + Calificaciones.nivel(n));\n}"},
+      ejecutar: {"codigo": "double[] notas = {4.5, 3.0, 2.9, 4.8};\nfor (double n : notas) {\n    System.out.println(n + \" -> estado: \" + Calificaciones.estado(n) + \", nivel: \" + Calificaciones.nivel(n));\n}"},
       titulo: 'Condicionales: ¿aprobó o no?',
       archivos: ['Calificaciones.java'],
       compilar: ['Calificaciones.java'],
@@ -54,6 +56,8 @@ if (edad &lt; 13) {
     },
     {
       id: 'w2',
+      ejecutar: {"codigo": "double[] notas = {4.0, 3.0, 5.0, 2.5};\nSystem.out.println(\"promedio = \" + Estadisticas.promedio(notas));\nSystem.out.println(\"aprobados = \" + Estadisticas.contarAprobados(notas));\nSystem.out.println(\"promedio de {} = \" + Estadisticas.promedio(new double[0]));"},
+      ejecutar: {"codigo": "double[] notas = {4.0, 3.0, 5.0, 2.5};\nSystem.out.println(\"promedio = \" + Estadisticas.promedio(notas));\nSystem.out.println(\"aprobados = \" + Estadisticas.contarAprobados(notas));\nSystem.out.println(\"promedio de {} = \" + Estadisticas.promedio(new double[0]));"},
       titulo: 'Ciclos: promedio y aprobados',
       archivos: ['Estadisticas.java'],
       compilar: ['Estadisticas.java'],
@@ -89,6 +93,8 @@ for (int i = 0; i &lt; edades.length; i++) {
     },
     {
       id: 'w3',
+      ejecutar: {"codigo": "Estudiante e = new Estudiante(\"Ana\", 18, 4.6);\nSystem.out.println(\"getNombre() -> \" + e.getNombre());\nSystem.out.println(\"getEdad() -> \" + e.getEdad());\nSystem.out.println(\"getNota() -> \" + e.getNota());\nSystem.out.println(\"getEstadoAcademico() -> \" + e.getEstadoAcademico());\nSystem.out.println(\"toString() -> \" + e);"},
+      ejecutar: {"codigo": "Estudiante e = new Estudiante(\"Ana\", 18, 4.6);\nSystem.out.println(\"getNombre() -> \" + e.getNombre());\nSystem.out.println(\"getEdad() -> \" + e.getEdad());\nSystem.out.println(\"getNota() -> \" + e.getNota());\nSystem.out.println(\"getEstadoAcademico() -> \" + e.getEstadoAcademico());\nSystem.out.println(\"toString() -> \" + e);"},
       titulo: 'Clases y objetos: la clase Estudiante',
       archivos: ['Estudiante.java'],
       compilar: ['Estudiante.java'],
@@ -119,6 +125,8 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
     },
     {
       id: 'w4',
+      ejecutar: {"codigo": "EstudianteDAO dao = new EstudianteDAO();\nSystem.out.println(\"total() al inicio -> \" + dao.total());\ndao.agregar(new Estudiante(\"Ana\", 18, 4.6));\ndao.agregar(new Estudiante(\"Pedro\", 20, 3.1));\nSystem.out.println(\"total() después de agregar 2 -> \" + dao.total());\nSystem.out.println(\"buscarPorNombre(\\\"pedro\\\") -> \" + dao.buscarPorNombre(\"pedro\"));\nSystem.out.println(\"buscarPorNombre(\\\"Zoe\\\") -> \" + dao.buscarPorNombre(\"Zoe\"));"},
+      ejecutar: {"codigo": "EstudianteDAO dao = new EstudianteDAO();\nSystem.out.println(\"total() al inicio -> \" + dao.total());\ndao.agregar(new Estudiante(\"Ana\", 18, 4.6));\ndao.agregar(new Estudiante(\"Pedro\", 20, 3.1));\nSystem.out.println(\"total() después de agregar 2 -> \" + dao.total());\nSystem.out.println(\"buscarPorNombre(\\\"pedro\\\") -> \" + dao.buscarPorNombre(\"pedro\"));\nSystem.out.println(\"buscarPorNombre(\\\"Zoe\\\") -> \" + dao.buscarPorNombre(\"Zoe\"));"},
       titulo: 'ArrayList y el patrón DAO',
       archivos: ['EstudianteDAO.java', 'Estudiante.java'],
       compilar: ['EstudianteDAO.java', 'Estudiante.java'],
@@ -152,6 +160,8 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
     },
     {
       id: 'w5',
+      ejecutar: {"peticiones": "GET /api/estudiantes"},
+      ejecutar: {"peticiones": "GET /api/estudiantes"},
       titulo: 'Servlet: GET /api/estudiantes en JSON',
       archivos: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
       compilar: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
@@ -190,6 +200,8 @@ public class EstudianteServlet extends HttpServlet { ... }</code></pre>
     },
     {
       id: 'w6',
+      ejecutar: {"peticiones": "POST /api/estudiantes nombre=Sofia&edad=17&nota=4.2\nPOST /api/estudiantes edad=17&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=diecisiete&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=17&nota=7\nGET /api/estudiantes"},
+      ejecutar: {"peticiones": "POST /api/estudiantes nombre=Sofia&edad=17&nota=4.2\nPOST /api/estudiantes edad=17&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=diecisiete&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=17&nota=7\nGET /api/estudiantes"},
       titulo: 'POST: crear estudiantes con validaciones',
       archivos: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
       compilar: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
@@ -230,7 +242,7 @@ try {
     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     out.print("{\\"mensaje\\":\\"Edad y nota deben ser numericas\\"}");
 }</code></pre>
-        <p>Con <b>▶ Ejecutar</b> verás varias peticiones POST de prueba y sus respuestas.</p>`,
+        <p>Con <b>▶ Ejecutar</b> Tomcat recibe las peticiones de <code>peticiones.http</code> (varios POST de prueba) y verás sus respuestas reales. Puedes agregar las tuyas.</p>`,
       pistas: [
         'Los métodos para convertir son <code>Integer.parseInt</code> y <code>Double.parseDouble</code>.',
         'Para guardar: <code>dao.agregar(nuevo);</code>',
@@ -240,6 +252,8 @@ try {
     },
     {
       id: 'w7',
+      ejecutar: {"peticiones": "GET /api/estudiantes?nombre=pedro\nGET /api/estudiantes?nombre=Zoe\nGET /api/estudiantes"},
+      ejecutar: {"peticiones": "GET /api/estudiantes?nombre=pedro\nGET /api/estudiantes?nombre=Zoe\nGET /api/estudiantes"},
       titulo: 'Integración: búsqueda por nombre y promedio',
       archivos: ['EstudianteServlet.java', 'Estadisticas.java', 'EstudianteDAO.java', 'Estudiante.java'],
       compilar: ['EstudianteServlet.java', 'Estadisticas.java', 'EstudianteDAO.java', 'Estudiante.java'],

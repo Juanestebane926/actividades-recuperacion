@@ -1,142 +1,213 @@
 /*
  * Motor de actividades paso a paso (estilo DataCamp).
- * Lee window.ACTIVIDAD y usa un evaluador: window.MotorJava o window.MotorReact.
+ * Lee window.ACTIVIDAD (explicaciones y pasos) y habla con el servidor del curso, que es quien
+ * compila y ejecuta de verdad el código, corre las pruebas y guarda avance y notas.
  */
 (function () {
   'use strict';
   const A = window.ACTIVIDAD;
-  const EV = A.motor === 'java' ? window.MotorJava : window.MotorReact;
-  const CLAVE = 'rec:' + A.id;
+  const CLAVE_TOKEN = 'rec2:token:' + A.id;
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const HTTP = 'peticiones.http';
   let app = null;
 
-  let estado = null;            // lo que se guarda en el navegador del estudiante
-  let originales = {};          // código inicial de cada archivo
-  let revision = null;          // comprobante cargado por el docente (modo revisión)
-  let editor = null, archivoActual = null, ocupado = false;
+  let token = null, estudiante = null, estado = null, entregas = [];
+  let originales = {};
+  let editor = null, archivoActual = null, ocupado = false, pasoActual = null;
+  let cambios = {}, timerGuardar = null, guardando = false;
 
-  // ------------------------------------------------------------------ almacenamiento
-  function guardar() {
-    if (revision) return;
-    try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) { /* sin almacenamiento */ }
+  // ------------------------------------------------------------------ servidor
+  async function api(metodo, url, cuerpo) {
+    let r;
+    try {
+      r = await fetch(url, {
+        method: metodo,
+        headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}),
+        body: cuerpo ? JSON.stringify(cuerpo) : undefined
+      });
+    } catch (e) {
+      throw new Error('No hay conexión con el servidor del curso. Revisa tu internet y vuelve a intentar (tu código no se pierde).');
+    }
+    let datos = {};
+    try { datos = await r.json(); } catch (e) { /* sin cuerpo */ }
+    if (!r.ok) {
+      const err = new Error(datos.error || ('Error ' + r.status));
+      err.status = r.status;
+      throw err;
+    }
+    return datos;
   }
-  function cargarGuardado() {
-    try { return JSON.parse(localStorage.getItem(CLAVE) || 'null'); } catch (e) { return null; }
+
+  function marcarGuardado(texto, error) {
+    const g = $('#guardado');
+    if (!g) return;
+    g.textContent = texto;
+    g.classList.toggle('error', !!error);
   }
-  function nuevoEstado(nombre, doc) {
-    return { v: 1, nombre, doc, archivos: Object.assign({}, originales), paso: 0, res: {}, pistas: {}, inicio: Date.now(), nota: null };
+
+  /** Guarda en el servidor (con una pequeña espera para no enviar en cada tecla). */
+  function guardar(inmediato) {
+    clearTimeout(timerGuardar);
+    timerGuardar = setTimeout(enviarCambios, inmediato ? 0 : 1200);
+    marcarGuardado('Sin guardar…');
   }
+  async function enviarCambios() {
+    if (guardando) { guardar(); return; }
+    guardando = true;
+    const enviar = { paso: estado.paso, pistas: estado.pistas, peticiones: estado.peticiones };
+    if (Object.keys(cambios).length) enviar.archivos = cambios;
+    const enviados = cambios;
+    cambios = {};
+    try {
+      await api('PUT', '/api/progreso', enviar);
+      marcarGuardado('✓ Guardado');
+    } catch (e) {
+      cambios = Object.assign({}, enviados, cambios);
+      marcarGuardado(e.status === 401 ? 'Sesión vencida' : '⚠ Sin conexión: reintentando…', true);
+      if (e.status !== 401) setTimeout(() => guardar(true), 5000);
+    } finally {
+      guardando = false;
+    }
+  }
+  window.addEventListener('beforeunload', ev => {
+    if (Object.keys(cambios).length) { enviarCambios(); ev.preventDefault(); ev.returnValue = ''; }
+  });
 
   // ------------------------------------------------------------------ arranque
   async function iniciar() {
     app = document.getElementById('app');
-    A.pasos.forEach(p => { if (!p.nPruebas && p.pruebas) p.nPruebas = p.pruebas.length; });
     app.innerHTML = '<div class="portada"><div class="tarjeta"><div class="estado-carga"><span class="girando"></span> Cargando actividad…</div></div></div>';
-    const nombres = Object.keys(A.archivos);
-    await Promise.all(nombres.map(async n => {
+    await Promise.all(Object.keys(A.archivos).map(async n => {
       const r = await fetch(A.archivos[n].ruta, { cache: 'no-cache' });
       originales[n] = (await r.text()).replace(/\r\n/g, '\n');
     }));
-    const params = new URLSearchParams(location.search);
-    if (params.has('revisar')) {
+    try { token = localStorage.getItem(CLAVE_TOKEN); } catch (e) { token = null; }
+    if (token) {
       try {
-        revision = JSON.parse(localStorage.getItem('rec:revision') || 'null');
-      } catch (e) { revision = null; }
-      if (revision && revision.act === A.id) {
-        estado = nuevoEstado(revision.nombre, revision.doc);
-        Object.assign(estado.archivos, revision.archivos || {});
-        estado.paso = A.pasos.length;
-        mostrarTrabajo();
+        entrar(await api('GET', '/api/yo'));
         return;
+      } catch (e) {
+        if (e.status === 401) { try { localStorage.removeItem(CLAVE_TOKEN); } catch (x) { } token = null; }
+        else { portada(e.message); return; }
       }
-      revision = null;
     }
     portada();
   }
 
-  function portada() {
-    const g = cargarGuardado();
+  function entrar(d) {
+    estudiante = { nombre: d.nombre, doc: d.doc };
+    estado = d.estado;
+    estado.peticiones = estado.peticiones || {};
+    estado.pistas = estado.pistas || {};
+    estado.res = estado.res || {};
+    entregas = d.entregas || [];
+    for (const n in originales) if (!(n in estado.archivos)) estado.archivos[n] = originales[n];
+    mostrarTrabajo();
+  }
+
+  function portada(error) {
     const temas = A.temas.map(t => '<span class="chip">' + esc(t) + '</span>').join('');
     app.innerHTML = `
       <div class="portada">
         <div class="tarjeta">
-          <div class="num" style="color:var(--primario);font-weight:700">Actividad de recuperación · ${esc(A.curso)}</div>
+          <div style="color:var(--primario);font-weight:700">Actividad de recuperación · ${esc(A.curso)}</div>
           <h1>${esc(A.titulo)}</h1>
           <p class="sub">${A.descripcion}</p>
           <div class="chips">${temas}</div>
-          <div class="chips"><span class="chip">⏱ ${esc(A.duracion)}</span><span class="chip">🧩 ${A.pasos.length} pasos + entrega</span><span class="chip">💻 Nada que instalar</span></div>
+          <div class="chips"><span class="chip">⏱ ${esc(A.duracion)}</span><span class="chip">🧩 ${A.pasos.length} pasos + nota</span><span class="chip">💻 Nada que instalar</span></div>
         </div>
         <div class="tarjeta">
           <h3 style="margin-top:0">¿Cómo funciona?</h3>
           <ol>
             <li>Cada paso trae una <b>explicación</b> y un <b>código para completar</b>. Los espacios <code>____</code> son los que debes llenar.</li>
-            <li><b>▶ Ejecutar</b> corre tu código y te muestra el resultado. <b>✔ Comprobar</b> revisa si quedó bien y te dice qué corregir.</li>
-            <li>Si te atascas, abre las <b>pistas</b>. Puedes volver a intentar cuantas veces quieras.</li>
-            <li>Al final, en <b>Entrega</b>, se califica todo tu código y obtienes tu <b>nota</b> con un <b>código de verificación</b> para tu profesor.</li>
+            <li><b>▶ Ejecutar</b> corre tu código de verdad y te muestra lo que hace. <b>✔ Comprobar</b> corre las pruebas automáticas y te dice qué falla, con los mensajes reales del compilador y del framework.</li>
+            <li>Si te atascas, abre las <b>pistas</b>. Puedes intentar cuantas veces quieras.</li>
+            <li>Al final, en <b>🏁 Nota</b>, se califica todo tu código y la nota <b>queda registrada para tu profesor</b> automáticamente.</li>
           </ol>
           ${A.aviso ? '<div class="nota-info">' + A.aviso + '</div>' : ''}
-          <p style="color:var(--suave);font-size:14px">Tu avance se guarda automáticamente en este navegador. Si cierras la pestaña, al volver continúas donde ibas (usa el mismo navegador y equipo).</p>
         </div>
         <div class="tarjeta">
-          ${g ? `<div class="aviso info">Tienes una actividad en curso como <b>${esc(g.nombre)}</b>.</div>
-                 <div class="acciones" style="margin-bottom:16px"><button class="btn primario grande" id="continuar">Continuar como ${esc(g.nombre)} →</button></div>
-                 <h3>¿Eres otra persona o quieres empezar de cero?</h3>` : '<h3 style="margin-top:0">Tus datos</h3>'}
-          <div class="fila">
-            <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Ej: Ana María Pérez"></div>
-            <div class="campo"><label for="doc">Documento o código de estudiante</label><input id="doc" placeholder="Ej: 1012345678"></div>
-          </div>
-          <div class="acciones"><button class="btn ${g ? '' : 'primario'} grande" id="empezar">${g ? 'Empezar de nuevo' : 'Empezar la actividad →'}</button></div>
-          <p id="error-datos" class="aviso mal oculto"></p>
+          <h3 style="margin-top:0">Entrar</h3>
+          <p style="color:var(--suave);font-size:14px;margin-top:0">La primera vez escribe tus datos y <b>elige un PIN</b> de 4 a 8 números. Tu avance se guarda en el servidor: para continuar después (en este u otro computador) escribe el <b>mismo documento y PIN</b>.</p>
+          <form id="form-entrar">
+            <div class="fila">
+              <div class="campo"><label for="doc">Documento o código de estudiante</label><input id="doc" autocomplete="username" placeholder="Ej: 1012345678" required></div>
+              <div class="campo"><label for="pin">PIN (4 a 8 números)</label><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Ej: 2580" required></div>
+            </div>
+            <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Ej: Ana María Pérez"><small>Solo se pide la primera vez.</small></div>
+            <div class="acciones"><button class="btn primario grande" id="empezar" type="submit">Entrar a la actividad →</button></div>
+          </form>
+          <p id="error-datos" class="aviso mal ${error ? '' : 'oculto'}">${esc(error || '')}</p>
         </div>
         <p style="text-align:center;color:var(--suave);font-size:13px"><a href="../">← Todas las actividades</a></p>
       </div>`;
-    if (g) $('#continuar').onclick = () => { estado = g; for (const n in originales) if (!(n in estado.archivos)) estado.archivos[n] = originales[n]; mostrarTrabajo(); };
-    $('#empezar').onclick = () => {
-      const nombre = $('#nombre').value.trim(), doc = $('#doc').value.trim();
+    $('#form-entrar').onsubmit = async ev => {
+      ev.preventDefault();
       const e = $('#error-datos');
-      if (nombre.length < 5 || !/\s/.test(nombre)) { e.textContent = 'Escribe tu nombre completo (nombre y apellido).'; e.classList.remove('oculto'); return; }
-      if (doc.length < 3) { e.textContent = 'Escribe tu documento o código de estudiante.'; e.classList.remove('oculto'); return; }
-      if (g && !confirm('Se borrará el avance guardado de ' + g.nombre + '. ¿Continuar?')) return;
-      estado = nuevoEstado(nombre, doc);
-      guardar();
-      mostrarTrabajo();
+      const b = $('#empezar');
+      b.disabled = true;
+      try {
+        const d = await api('POST', '/api/sesion', { actividad: A.id, nombre: $('#nombre').value, doc: $('#doc').value, pin: $('#pin').value });
+        token = d.token;
+        try { localStorage.setItem(CLAVE_TOKEN, token); } catch (x) { }
+        entrar(d);
+      } catch (x) {
+        e.textContent = x.message;
+        e.classList.remove('oculto');
+      } finally {
+        b.disabled = false;
+      }
     };
+  }
+
+  function salir() {
+    enviarCambios();
+    try { localStorage.removeItem(CLAVE_TOKEN); } catch (x) { }
+    token = null;
+    portada();
   }
 
   // ------------------------------------------------------------------ estructura
   function mostrarTrabajo() {
     app.innerHTML = `
-      ${revision ? '<div class="revision">Modo revisión docente · comprobante de ' + esc(revision.nombre) + ' (' + esc(revision.doc) + ') · nota declarada ' + Number(revision.nota).toFixed(1) + '</div>' : ''}
       <header class="barra">
-        <div class="marca">${esc(A.curso)}<small>Actividad de recuperación</small></div>
-        <nav class="progreso" id="progreso" aria-label="Pasos"></nav>
-        <div class="estudiante">${esc(estado.nombre)}<br>${esc(estado.doc)}</div>
+        <div class="marca">${esc(A.curso)}<small>Recuperación</small></div>
+        <nav class="navpasos" aria-label="Pasos">
+          <button class="flecha" id="anterior" title="Paso anterior (Alt + ←)">‹ Anterior</button>
+          <div class="progreso" id="progreso"></div>
+          <button class="flecha primaria" id="siguiente" title="Paso siguiente (Alt + →)">Siguiente ›</button>
+        </nav>
+        <div class="estudiante">${esc(estudiante.nombre)} · ${esc(estudiante.doc)}<br><span class="guardado" id="guardado">✓ Guardado</span> · <button id="salir" title="Cerrar sesión en este computador">Salir</button></div>
       </header>
-      <main id="vista"></main>
-      <footer class="navegacion">
-        <button class="btn" id="anterior">← Anterior</button>
-        <button class="btn primario" id="siguiente">Siguiente →</button>
-      </footer>`;
+      <main id="vista"></main>`;
     $('#anterior').onclick = () => irA(estado.paso - 1);
     $('#siguiente').onclick = () => irA(estado.paso + 1);
-    if (EV.preparar) EV.preparar(A, () => {});
-    irA(estado.paso);
+    $('#salir').onclick = salir;
+    irA(Math.min(estado.paso || 0, A.pasos.length));
   }
+  document.addEventListener('keydown', ev => {
+    if (!ev.altKey || !estado || !$('#vista')) return;
+    if (ev.key === 'ArrowLeft') { ev.preventDefault(); irA(estado.paso - 1); }
+    if (ev.key === 'ArrowRight') { ev.preventDefault(); irA(estado.paso + 1); }
+  });
 
   function pintarProgreso() {
     const p = $('#progreso');
     let h = '';
     A.pasos.forEach((paso, i) => {
       const r = estado.res[paso.id];
-      const cls = [i === estado.paso ? 'actual' : '', r ? (r.ok === r.total ? 'hecho' : 'fallo') : ''].join(' ');
-      h += `<button class="${cls}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}">${r && r.ok === r.total ? '✓' : i + 1}</button>`;
+      const completo = r && r.total && r.ok === r.total;
+      const cls = [i === estado.paso ? 'actual' : '', r ? (completo ? 'hecho' : 'fallo') : ''].join(' ');
+      h += `<button class="${cls}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}${r ? ' (' + r.ok + '/' + r.total + ')' : ''}">${completo ? '✓' : i + 1}</button>`;
     });
-    h += `<button class="${estado.paso === A.pasos.length ? 'actual' : ''} ${estado.nota != null ? 'hecho' : ''}" data-i="${A.pasos.length}" title="Entrega y nota" style="width:auto;border-radius:16px;padding:0 10px">🏁 Nota</button>`;
+    h += `<button class="nota ${estado.paso === A.pasos.length ? 'actual' : ''} ${entregas.length ? 'hecho' : ''}" data-i="${A.pasos.length}" title="Calificar y ver la nota">🏁 Nota</button>`;
     p.innerHTML = h;
     p.querySelectorAll('button').forEach(b => b.onclick = () => irA(+b.dataset.i));
     $('#anterior').disabled = estado.paso === 0;
-    $('#siguiente').classList.toggle('oculto', estado.paso >= A.pasos.length);
+    $('#siguiente').disabled = estado.paso >= A.pasos.length;
+    const actual = p.querySelector('.actual');
+    if (actual) actual.scrollIntoView({ block: 'nearest', inline: 'center' });
   }
 
   function irA(i) {
@@ -150,7 +221,10 @@
   }
 
   // ------------------------------------------------------------------ vista de paso
+  function tienePeticiones(paso) { return !!(paso.ejecutar && paso.ejecutar.peticiones); }
+
   function vistaPaso(paso, i) {
+    pasoActual = paso;
     const pistasVistas = estado.pistas[paso.id] || 0;
     const pistas = (paso.pistas || []).map((p, k) => `<details ${k < pistasVistas ? 'open' : ''} data-k="${k}"><summary>Pista ${k + 1}</summary><div>${p}</div></details>`).join('');
     $('#vista').innerHTML = `
@@ -162,19 +236,23 @@
           <div class="tarea"><h3>🎯 Tu tarea</h3>${paso.tarea}</div>
           ${pistas ? '<h3>¿Te atascaste?</h3><div class="pistas">' + pistas + '</div>' : ''}
         </section>
-        <section class="editor-col">
+        <section class="editor-col" id="editor-col">
           <div class="editor-caja">
             <div class="pestanas" id="pestanas"></div>
             <div id="editor"></div>
+            <div class="ayuda-http oculto" id="ayuda-http">Una petición por línea: <code>GET /ruta</code> · <code>POST /ruta {"campo": "valor"}</code>${A.id === 'java-web' ? ' · <code>POST /ruta nombre=Ana&amp;edad=17</code>' : ''} · <code>DELETE /ruta/1</code>. Las líneas con # se ignoran.</div>
           </div>
           <div class="acciones">
-            <button class="btn" id="ejecutar" title="Corre tu código y muestra lo que produce">▶ Ejecutar</button>
-            <button class="btn primario" id="comprobar" title="Revisa si tu código cumple la tarea">✔ Comprobar</button>
+            <button class="btn" id="ejecutar" title="Corre tu código de verdad y muestra lo que hace">▶ Ejecutar</button>
+            <button class="btn primario" id="comprobar" title="Corre las pruebas automáticas (Ctrl + Enter)">✔ Comprobar</button>
+            <span class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></span>
             <span class="espacio"></span>
-            <button class="btn" id="reiniciar" title="Vuelve este archivo a su versión inicial">↺ Reiniciar archivo</button>
+            <button class="btn chico" id="reiniciar" title="Vuelve este archivo a su versión inicial">↺ Reiniciar archivo</button>
           </div>
-          <div class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></div>
-          <div class="salida"><div class="cab"><span id="salida-titulo">Resultado</span></div><div class="cuerpo" id="salida"><p class="vacio">Pulsa <b>▶ Ejecutar</b> para ver qué hace tu código o <b>✔ Comprobar</b> para revisarlo.</p></div></div>
+          <div class="salida">
+            <div class="cab"><span id="salida-titulo">Resultado</span><button class="btn chico" id="agrandar" title="Agrandar o achicar el panel de resultados">⤢ Agrandar</button></div>
+            <div class="cuerpo" id="salida"><p class="vacio">Pulsa <b>▶ Ejecutar</b> para ver qué hace tu código o <b>✔ Comprobar</b> para revisarlo.</p></div>
+          </div>
         </section>
       </div>`;
     $('#vista').querySelectorAll('.pistas details').forEach(d => d.addEventListener('toggle', () => {
@@ -183,18 +261,34 @@
     crearEditor(paso);
     $('#ejecutar').onclick = () => evaluar(paso, 'ejecutar');
     $('#comprobar').onclick = () => evaluar(paso, 'comprobar');
-    $('#reiniciar').onclick = () => {
-      const f = A.archivos[archivoActual];
-      if (f.soloLectura) return;
-      if (!confirm('¿Volver ' + archivoActual + ' a su código inicial? Perderás lo que escribiste en este archivo.')) return;
-      estado.archivos[archivoActual] = originales[archivoActual];
-      guardar();
-      editor.setValue(originales[archivoActual]);
+    $('#agrandar').onclick = () => {
+      const c = $('#editor-col');
+      c.classList.toggle('salida-grande');
+      $('#agrandar').textContent = c.classList.contains('salida-grande') ? '⤡ Achicar' : '⤢ Agrandar';
+      setTimeout(() => editor.refresh(), 30);
     };
-    const r = estado.res[paso.id];
-    if (r && r.ultimo) pintarResultado(r.ultimo, 'comprobar');
+    $('#reiniciar').onclick = () => reiniciarArchivo(paso);
   }
 
+  function reiniciarArchivo(paso) {
+    const b = $('#reiniciar');
+    if (archivoActual !== HTTP && A.archivos[archivoActual].soloLectura) return;
+    if (b.dataset.confirmar !== '1') {
+      b.dataset.confirmar = '1';
+      b.textContent = '¿Seguro? Pulsa otra vez';
+      setTimeout(() => { b.dataset.confirmar = ''; b.textContent = '↺ Reiniciar archivo'; }, 3500);
+      return;
+    }
+    b.dataset.confirmar = '';
+    b.textContent = '↺ Reiniciar archivo';
+    if (archivoActual === HTTP) { delete estado.peticiones[paso.id]; editor.setValue(paso.ejecutar.peticiones); guardar(); return; }
+    estado.archivos[archivoActual] = originales[archivoActual];
+    cambios[archivoActual] = originales[archivoActual];
+    editor.setValue(originales[archivoActual]);
+    guardar();
+  }
+
+  let marcaError = null;
   function crearEditor(paso) {
     const tabs = $('#pestanas');
     const modo = A.motor === 'java' ? 'text/x-java' : 'text/jsx';
@@ -212,36 +306,54 @@
       });
     };
     let t = null;
-    editor.on('change', () => {
+    editor.on('change', (cm, ch) => {
+      if (ch.origin === 'setValue') return;
+      if (archivoActual === HTTP) { estado.peticiones[paso.id] = editor.getValue(); guardar(); return; }
       if (A.archivos[archivoActual].soloLectura) return;
       estado.archivos[archivoActual] = editor.getValue();
-      clearTimeout(t); t = setTimeout(() => { guardar(); marcarBlancos(); }, 300);
+      cambios[archivoActual] = estado.archivos[archivoActual];
+      guardar();
+      clearTimeout(t); t = setTimeout(marcarBlancos, 300);
+      if (marcaError) { editor.removeLineClass(marcaError, 'background', 'cm-linea-error'); marcaError = null; }
     });
     const abrir = n => {
       archivoActual = n;
-      editor.setOption('readOnly', !!A.archivos[n].soloLectura);
-      editor.setValue(estado.archivos[n]);
+      const esHttp = n === HTTP;
+      editor.setOption('readOnly', !esHttp && !!A.archivos[n].soloLectura);
+      editor.setOption('mode', esHttp ? 'text/plain' : modo);
+      editor.setValue(esHttp ? (estado.peticiones[paso.id] ?? paso.ejecutar.peticiones) : estado.archivos[n]);
       editor.clearHistory();
       marcarBlancos();
+      $('#ayuda-http').classList.toggle('oculto', !esHttp);
       tabs.querySelectorAll('button').forEach(b => b.classList.toggle('activa', b.dataset.n === n));
       const primero = editor.getValue().indexOf('____');
-      if (primero >= 0 && !A.archivos[n].soloLectura) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
+      if (primero >= 0 && !esHttp) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
+      setTimeout(() => editor.refresh(), 0);
     };
-    tabs.innerHTML = paso.archivos.map(n => `<button data-n="${esc(n)}">${esc(n)}${A.archivos[n].soloLectura ? ' <span class="candado" title="Solo lectura">🔒</span>' : ''}</button>`).join('');
+    const nombres = paso.archivos.slice();
+    let h = nombres.map(n => `<button data-n="${esc(n)}">${esc(n)}${A.archivos[n].soloLectura ? ' <span class="candado" title="Solo lectura">🔒</span>' : ''}</button>`).join('');
+    if (tienePeticiones(paso)) h += `<button data-n="${HTTP}" class="http" title="Peticiones HTTP que envía ▶ Ejecutar (como Thunder Client)">🌐 ${HTTP}</button>`;
+    tabs.innerHTML = h;
     tabs.querySelectorAll('button').forEach(b => b.onclick = () => abrir(b.dataset.n));
-    abrir(paso.archivos.find(n => !A.archivos[n].soloLectura) || paso.archivos[0]);
+    abrir(nombres.find(n => !A.archivos[n].soloLectura) || nombres[0]);
     crearEditor.abrir = abrir;
     setTimeout(() => editor.refresh(), 50);
   }
 
+  let reloj = null;
   function setCargando(txt) {
     const c = $('#cargando');
     if (!c) return;
+    clearInterval(reloj);
     c.classList.toggle('oculto', !txt);
-    $('#cargando-txt').textContent = txt || '';
+    if (!txt) return;
+    const t0 = Date.now();
+    const pintar = () => { $('#cargando-txt').textContent = txt + ' ' + Math.round((Date.now() - t0) / 1000) + ' s'; };
+    pintar();
+    reloj = setInterval(pintar, 1000);
   }
 
-  /** Busca espacios ____ sin completar en los archivos indicados. */
+  /** Espacios ____ sin completar (revisión rápida antes de ir al servidor). */
   function blancos(nombres) {
     const r = [];
     nombres.forEach(n => {
@@ -257,17 +369,22 @@
     ['#ejecutar', '#comprobar', '#reiniciar'].forEach(s => { const b = $(s); if (b) b.disabled = true; });
     try {
       const b = blancos(paso.compilar);
-      if (b.length) {
-        pintarResultado({ blancos: b }, modo);
-        if (modo === 'comprobar') registrar(paso, { blancos: b, resultados: [] });
-        return;
-      }
-      const res = await EV.evaluarPaso(A, paso, estado.archivos, modo, setCargando);
-      if (modo === 'comprobar') registrar(paso, res);
-      pintarResultado(res, modo);
+      if (b.length) { pintarResultado({ blancos: b }, modo); return; }
+      setCargando(modo === 'ejecutar'
+        ? (A.motor === 'java' ? (tienePeticiones(paso) ? 'Compilando y arrancando tu aplicación…' : 'Compilando y ejecutando…') : 'Armando tu app…')
+        : 'Compilando y corriendo las pruebas…');
+      const archivos = {};
+      paso.compilar.forEach(n => { if (!A.archivos[n].soloLectura) archivos[n] = estado.archivos[n]; });
+      cambios = {};
+      const cuerpo = { paso: paso.id, modo, archivos };
+      if (modo === 'ejecutar' && tienePeticiones(paso)) cuerpo.peticiones = estado.peticiones[paso.id] ?? paso.ejecutar.peticiones;
+      const res = await api('POST', '/api/evaluar', cuerpo);
+      marcarGuardado('✓ Guardado');
+      if (res.progreso) { estado.res = res.progreso; pintarProgreso(); }
+      if (pasoActual === paso) pintarResultado(res, modo);
     } catch (e) {
-      console.error(e);
-      pintarResultado({ errorInterno: String(e && e.message || e) }, modo);
+      if (e.status === 401) { salir(); return; }
+      pintarResultado({ errorInterno: e.message }, modo);
     } finally {
       ocupado = false;
       setCargando('');
@@ -275,87 +392,182 @@
     }
   }
 
-  function registrar(paso, res) {
-    const total = (paso.nPruebas || (res.resultados || []).length) || 1;
-    const ok = (res.resultados || []).filter(r => r.ok).length;
-    estado.res[paso.id] = { ok, total, ultimo: res };
-    guardar();
-    pintarProgreso();
-  }
-
+  // Explicación en español junto al mensaje real (que siempre se muestra completo)
   const TRAD = [
-    [/cannot find symbol/, 'No encuentro ese nombre. Revisa mayúsculas/minúsculas, que la variable o método exista y que esté importado.'],
+    [/cannot find symbol/, 'No existe ese nombre: revisa mayúsculas/minúsculas, que la variable o el método exista y que la clase esté importada.'],
     [/';' expected/, 'Falta un punto y coma ; al final de la instrucción.'],
-    [/not a statement/, 'Esa línea no es una instrucción válida de Java (¿quedó un ____ o algo incompleto?).'],
+    [/not a statement/, 'Esa línea no es una instrucción válida de Java (¿quedó algo incompleto?).'],
     [/incompatible types/, 'Tipos incompatibles: el valor no es del tipo que se espera en ese lugar.'],
     [/missing return statement/, 'Falta un return: el método debe devolver un valor en todos los caminos.'],
     [/reached end of file while parsing/, 'Falta cerrar una llave }.'],
-    [/class, interface, or enum expected/, 'Sobra una llave } o hay código fuera de la clase.'],
+    [/class, interface, enum, or record expected|class, interface, or enum expected/, 'Sobra una llave } o hay código fuera de la clase.'],
     [/unclosed string literal/, 'Falta cerrar unas comillas "…".'],
     [/illegal start of (expression|type)/, 'Algo está mal escrito antes de este punto (revisa paréntesis, llaves y comillas).'],
     [/'\)' expected/, 'Falta cerrar un paréntesis ).'],
     [/'\(' expected/, 'Falta abrir un paréntesis (.'],
     [/<identifier> expected/, 'Se esperaba un nombre (identificador) en este punto.'],
     [/is not abstract and does not override/, 'Falta implementar un método obligatorio.'],
-    [/variable .* might not have been initialized/, 'Usas una variable antes de darle un valor.'],
-    [/variable .* is already defined/, 'Declaraste dos veces la misma variable.'],
-    [/cannot be applied to given types/, 'Llamas un método o constructor con parámetros que no coinciden (cantidad o tipo).'],
-    [/unreported exception/, 'Este código puede lanzar una excepción que debes manejar (try/catch) o declarar con throws.'],
-    [/annotation type not applicable/, 'Esa anotación no se puede poner en ese lugar.'],
+    [/might not have been initialized/, 'Usas una variable antes de darle un valor.'],
+    [/is already defined/, 'Declaraste dos veces lo mismo.'],
+    [/cannot be applied to given types|constructor .* cannot be applied/, 'Llamas un método o constructor con parámetros que no coinciden (cantidad o tipo).'],
+    [/unreported exception/, 'Este código puede lanzar una excepción que debes atrapar (try/catch) o declarar con throws.'],
+    [/annotation .* not applicable|not applicable to this kind/, 'Esa anotación no se puede poner en ese lugar.'],
     [/cannot assign a value to final variable/, 'No puedes cambiar una variable final.'],
-    [/Unexpected token/, 'Hay un símbolo inesperado: revisa llaves, paréntesis, comillas y etiquetas.'],
-    [/Adjacent JSX elements/, 'Un componente debe devolver UN solo elemento raíz: envuelve todo en un <div> o en <>…</>.'],
-    [/Expected corresponding JSX closing tag/, 'Una etiqueta JSX no está bien cerrada.'],
-    [/is not defined/, 'Usas un nombre que no existe (revisa cómo lo escribiste).'],
+    [/is public, should be declared in a file named/, 'El nombre de la clase pública debe ser igual al nombre del archivo.'],
+    [/package .* does not exist/, 'Ese import no existe: revisa cómo escribiste el paquete.'],
+    [/bad operand types for binary operator/, 'No se puede usar ese operador con esos tipos (por ejemplo, comparar un String con >).'],
+    [/Unexpected closing .* tag does not match opening/, 'Una etiqueta JSX se cerró con otro nombre: cada <x> se cierra con </x>.'],
+    [/Unexpected end of file before a closing/, 'Falta cerrar una etiqueta JSX.'],
+    [/Expected ".*" but found/, 'Hay un símbolo que sobra o que falta (revisa llaves, paréntesis, comillas y etiquetas).'],
+    [/Unterminated string literal|Unterminated template/, 'Falta cerrar unas comillas o un template literal (`…`).'],
+    [/The character ".*" is not valid inside a JSX element/, 'Ese símbolo no se puede escribir directo dentro de JSX.'],
+    [/Could not resolve "\.\//, 'No existe ese archivo: revisa el nombre en el import (mayúsculas incluidas).'],
+    [/No matching export in .* for import/, 'Ese archivo no exporta ese nombre: revisa el export del componente o la forma del import ({ } o sin llaves).'],
+    [/Multiple exports with the same name|has already been declared/, 'Declaraste dos veces el mismo nombre.'],
+    [/Por seguridad/, ''],
   ];
   function traducir(m) { for (const [re, t] of TRAD) if (re.test(m)) return t; return ''; }
+
+  function enlace(archivo, linea) {
+    if (!archivo) return '';
+    return `<a href="#" data-a="${esc(archivo)}" data-l="${linea || 1}">${esc(archivo)}${linea ? ', línea ' + linea : ''}</a>`;
+  }
+
+  function htmlErrores(errores) {
+    let h = `<div class="aviso mal">❌ Tu código no compila, así que todavía no se puede ejecutar. Corrige el primer error y vuelve a intentar.</div>`;
+    h += errores.slice(0, 6).map(e => {
+      const es = traducir(e.mensaje);
+      const caret = e.codigo && e.columna ? '\n' + ' '.repeat(Math.max(0, e.columna - 1)) + '^' : '';
+      return `<div class="error-comp"><div class="donde">${enlace(e.archivo, e.linea)}</div>
+        <div class="real">${esc(e.mensaje)}</div>
+        ${e.codigo ? '<pre>' + esc(e.codigo + caret) + '</pre>' : ''}
+        ${es ? '<div class="es">💡 ' + esc(es) + '</div>' : ''}</div>`;
+    }).join('');
+    if (errores.length > 6) h += `<p class="vacio">… y ${errores.length - 6} errores más (muchas veces se arreglan solos al corregir el primero).</p>`;
+    return h;
+  }
+
+  function formatoCuerpo(c) {
+    const t = String(c || '');
+    if (/^\s*[[{]/.test(t)) { try { return JSON.stringify(JSON.parse(t), null, 2); } catch (e) { /* no es JSON */ } }
+    return t;
+  }
+
+  function htmlHttp(x) {
+    let h = `<div class="arranque ${/no pudo|FAILED|no pudo arrancar|no pudo desplegar/i.test(x.arranque || '') ? 'mal' : ''}">${esc(x.arranque || '')}</div>`;
+    for (const r of x.respuestas || []) {
+      const st = r.status ? String(r.status)[0] : '0';
+      h += `<div class="http-resp"><div class="linea"><span class="metodo">${esc(r.metodo)}</span><span>${esc(r.ruta)}</span>
+        ${r.status ? `<span class="st st${st}">${r.status}</span>` : ''}<span class="tipo">${esc(r.contentType || '')}</span></div>`;
+      if (r.enviado) h += `<pre class="enviado">Enviado: ${esc(r.enviado)}</pre>`;
+      if (r.error) h += `<div class="exc">${esc(r.error)}</div>`;
+      else h += `<pre>${r.cuerpo ? esc(formatoCuerpo(r.cuerpo)) : '<span class="enviado">(sin cuerpo)</span>'}</pre>`;
+      if (r.excepcion) h += `<div class="exc">Tu código lanzó: ${esc(r.excepcion)}</div>`;
+      h += '</div>';
+    }
+    return h;
+  }
 
   function pintarResultado(res, modo) {
     const s = $('#salida');
     if (!s) return;
     $('#salida-titulo').textContent = modo === 'ejecutar' ? 'Resultado de la ejecución' : 'Comprobación';
     let h = '';
+    let preview = null;
     if (res.errorInterno) {
-      h = `<div class="aviso mal">No se pudo evaluar tu código por un problema del evaluador: ${esc(res.errorInterno)}<br>Revisa tu conexión a internet y vuelve a intentarlo. Si persiste, recarga la página (tu código está guardado).</div>`;
+      h = `<div class="aviso mal">No se pudo evaluar: ${esc(res.errorInterno)}</div><p class="vacio">Tu código está guardado. Vuelve a intentarlo en un momento.</p>`;
     } else if (res.blancos) {
-      const lista = res.blancos.map(b => `<li><a href="#" data-a="${esc(b.archivo)}" data-l="${b.linea}">${esc(b.archivo)}, línea ${b.linea}</a></li>`).join('');
+      const lista = res.blancos.map(b => `<li>${enlace(b.archivo, b.linea)}</li>`).join('');
       h = `<div class="aviso info">✏️ Aún tienes espacios <code>____</code> por completar. Reemplaza cada <code>____</code> por el código correcto:</div><ul>${lista}</ul>`;
+    } else if (res.tiempoAgotado) {
+      h = `<div class="aviso mal">⏱ ${esc(res.mensaje)}</div>`;
+    } else if (res.peticionesInvalidas) {
+      h = `<div class="aviso mal">Revisa la pestaña <b>${HTTP}</b>: no entendí estas líneas.</div><pre class="consola">${esc(res.peticionesInvalidas.join('\n'))}</pre>
+        <p class="vacio">Formato: <code>GET /api/ruta</code> o <code>POST /api/ruta {"campo": "valor"}</code>, una por línea.</p>`;
     } else if (res.errores && res.errores.length) {
-      h = `<div class="aviso mal">❌ Tu código tiene errores de sintaxis/compilación, así que todavía no se puede ejecutar. Corrige el primero y vuelve a intentar.</div>`;
-      h += res.errores.slice(0, 5).map(e => {
-        const es = traducir(e.mensaje);
-        return `<div class="error-comp"><div class="donde">${e.archivo ? `<a href="#" data-a="${esc(e.archivo)}" data-l="${e.linea || 1}">${esc(e.archivo)}${e.linea ? ', línea ' + e.linea : ''}</a>` : ''}</div>
-          ${es ? '<div class="es">💡 ' + esc(es) + '</div>' : ''}<pre>${esc(e.mensaje)}${e.contexto ? '\n' + esc(e.contexto) : ''}</pre></div>`;
-      }).join('');
+      h = res.errores.some(e => e.seguridad)
+        ? `<div class="aviso mal">⛔ ${esc(res.errores[0].mensaje)}</div><div class="error-comp"><div class="donde">${enlace(res.errores[0].archivo, res.errores[0].linea)}</div><pre>${esc(res.errores[0].codigo || '')}</pre></div>`
+        : htmlErrores(res.errores);
+    } else if (modo === 'comprobar') {
+      const rs = res.pruebas || [];
+      const ok = rs.filter(r => r.ok).length;
+      h += ok === rs.length && rs.length
+        ? `<div class="aviso ok">🎉 ¡Muy bien! Pasaste las ${rs.length} pruebas de este paso.${estado.paso < A.pasos.length - 1 ? ' Sigue al siguiente con <b>Siguiente ›</b>.' : ' Ve a <b>🏁 Nota</b> para calificar.'}</div>`
+        : `<div class="aviso mal">Vas ${ok} de ${rs.length}. Lee el mensaje de la primera prueba que falla, corrige y vuelve a comprobar.</div>`;
+      h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? '✔' : '✘'}</span><div><div class="nombre">${esc(r.nombre)}</div>
+        ${r.ok ? '' : '<pre class="msg">' + esc(r.mensaje || '') + '</pre>'}
+        ${r.salida ? '<details class="plegable"><summary>Lo que imprimió tu código en esta prueba</summary><pre class="consola">' + esc(r.salida) + '</pre></details>' : ''}</div></div>`).join('');
+      if (res.ms) h += `<p class="vacio" style="font-size:12px">Evaluado en el servidor en ${(res.ms / 1000).toFixed(1)} s.</p>`;
     } else {
-      const rs = res.resultados || [];
-      if (modo === 'comprobar') {
-        const ok = rs.filter(r => r.ok).length;
-        h += ok === rs.length && rs.length
-          ? `<div class="aviso ok">🎉 ¡Muy bien! Pasaste las ${rs.length} comprobaciones de este paso. Puedes seguir al siguiente.</div>`
-          : `<div class="aviso mal">Vas ${ok} de ${rs.length}. Lee el mensaje de lo que falta, corrige y vuelve a comprobar.</div>`;
-        h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? '✔' : '✘'}</span><div><div class="nombre">${esc(r.nombre)}</div>${r.ok ? '' : '<div class="msg">' + esc(r.mensaje) + '</div>'}</div></div>`).join('');
+      // ▶ Ejecutar
+      if (res.js != null) {
+        preview = vistaPrevia(res.js);
+        h += '<div style="font-weight:600;font-size:14px;margin:0 0 4px">Tu app funcionando (puedes usarla):</div>';
+      } else if (res.http) {
+        h += htmlHttp(res.http);
+        if (res.consola && res.consola.trim()) {
+          const fallo = /FAILED|Exception/.test(res.http.arranque || '');
+          h += `<details class="plegable" ${fallo ? 'open' : ''}><summary>Consola del servidor (logs de ${A.id === 'spring-boot' ? 'Spring Boot' : 'Tomcat'})</summary><pre class="consola">${esc(res.consola)}</pre></details>`;
+        }
+      } else {
+        if (res.programa) h += `<details class="plegable"><summary>Programa de prueba que se ejecutó (usa tus clases)</summary><pre class="consola">${esc(res.programa)}</pre></details>`;
+        h += res.consola && res.consola.trim()
+          ? `<div style="font-weight:600;font-size:14px">Salida (System.out):</div><pre class="consola">${esc(res.consola)}</pre>`
+          : '<p class="vacio">El programa no imprimió nada.</p>';
       }
-      if (res.consola && res.consola.length) {
-        h += `<div style="margin-top:8px;font-weight:600;font-size:14px">${modo === 'ejecutar' ? (A.motor === 'java' ? 'Lo que se ejecutó (llamadas y peticiones simuladas) y lo que respondió tu código:' : 'Consola:') : 'Detalle de la ejecución:'}</div><div class="consola">${esc(res.consola.join('\n'))}</div>`;
-      } else if (modo === 'ejecutar' && !res.preview) {
-        h += '<p class="vacio">Tu código compiló, pero no produjo salida.</p>';
-      }
-      if (modo === 'ejecutar' && res.preview) h += '<div style="font-weight:600;font-size:14px;margin:4px 0">Vista previa:</div>';
+      if (res.excepcion) h += `<div class="aviso mal" style="white-space:pre-wrap;font-family:var(--mono);font-size:12.5px">${esc(res.excepcion)}</div>`;
     }
     s.innerHTML = h;
-    if (modo === 'ejecutar' && res.preview) s.appendChild(res.preview);
+    if (preview) s.appendChild(preview);
     s.querySelectorAll('a[data-a]').forEach(a => a.onclick = ev => {
       ev.preventDefault();
+      if (!pasoActual.archivos.includes(a.dataset.a)) return;
       crearEditor.abrir(a.dataset.a);
       const l = Math.max(0, +a.dataset.l - 1);
       editor.focus(); editor.setCursor({ line: l, ch: 0 }); editor.scrollIntoView({ line: l, ch: 0 }, 100);
+      marcaError = editor.addLineClass(l, 'background', 'cm-linea-error');
     });
+    s.scrollTop = 0;
     if (window.innerWidth < 900) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /** Vista previa de React: corre en un iframe aislado con React 18 (servido por el propio servidor). */
+  function vistaPrevia(js) {
+    const f = document.createElement('iframe');
+    f.className = 'preview';
+    f.setAttribute('sandbox', 'allow-scripts allow-modals');
+    f.title = 'Vista previa';
+    const css = `body{font:15px/1.5 system-ui,sans-serif;margin:12px;color:#1d2333;background:#fff}
+      .badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;margin-left:6px}
+      .badge-ok{background:#d3f9d8;color:#2b8a3e}.badge-mal{background:#ffe3e3;color:#c92a2a}
+      ul{padding-left:20px} li{margin:4px 0} button{font:inherit;padding:5px 12px;border-radius:6px;border:1px solid #bbb;background:#f3f4f8;cursor:pointer}
+      input{font:inherit;padding:5px 8px;margin:0 6px 6px 0;border:1px solid #bbb;border-radius:6px} .error{color:#c92a2a} .vacio{color:#777}
+      #consola{font:12px monospace;background:#263238;color:#e0e6ea;padding:6px 8px;border-radius:6px;white-space:pre-wrap;margin-top:10px}
+      #consola:empty{display:none} .falla{color:#c92a2a;font:13px monospace;white-space:pre-wrap;background:#fff0f0;padding:8px;border-radius:6px}`;
+    const pre = `
+      const consola = document.getElementById('consola');
+      const fmt = a => a.map(x => typeof x === 'string' ? x : (x instanceof Error ? x.message : JSON.stringify(x))).join(' ');
+      console.log = (...a) => { consola.textContent += fmt(a) + '\\n'; };
+      const err = console.error.bind(console);
+      console.error = (...a) => { const t = typeof a[0] === 'string' && a[0].includes('%s') ? (i => a[0].replace(/%s/g, () => String(a[i++])))(1) : fmt(a); consola.textContent += '✖ ' + t.split('\\n')[0] + '\\n'; err(...a); };
+      const mostrarFalla = m => { document.getElementById('root').innerHTML = '<div class="falla">' + String(m).replace(/</g, '&lt;') + '</div>'; };
+      window.onerror = (m) => mostrarFalla('Error: ' + m);
+      class Limite extends React.Component {
+        constructor(p) { super(p); this.state = { error: null }; }
+        static getDerivedStateFromError(error) { return { error }; }
+        render() { return this.state.error ? React.createElement('div', { className: 'falla' }, 'Tu componente lanzó un error: ' + this.state.error.message) : this.props.children; }
+      }
+      window.__montar = el => ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Limite, null, el));`;
+    const origen = location.origin;
+    f.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style>
+      <script src="${origen}/vendor/react.js"><\/script><script src="${origen}/vendor/react-dom.js"><\/script></head>
+      <body><div id="root"></div><pre id="consola"></pre><script>${pre}<\/script><script>${js.replace(/<\/script/gi, '<\\/script')}<\/script></body></html>`;
+    return f;
   }
 
   // ------------------------------------------------------------------ entrega y nota
   function vistaEntrega() {
+    pasoActual = null;
     const filas = A.pasos.map((p, i) => {
       const r = estado.res[p.id];
       const st = !r ? '<span style="color:var(--suave)">Sin comprobar</span>' : r.ok === r.total ? '<span style="color:var(--ok)">✔ Completo</span>' : `<span style="color:var(--aviso)">${r.ok}/${r.total}</span>`;
@@ -364,18 +576,18 @@
     $('#vista').innerHTML = `
       <div class="entrega">
         <div class="tarjeta">
-          <h2 style="margin-top:0">🏁 Entrega y nota</h2>
-          <p>Cuando pulses <b>Calificar mi actividad</b> se ejecutan <b>todas</b> las comprobaciones sobre el código que tienes ahora en todos los pasos. Cada paso vale lo mismo. La nota va de <b>0.0 a 5.0</b> y se aprueba con <b>3.0</b>.</p>
+          <h2 style="margin-top:0">🏁 Calificar y ver la nota</h2>
+          <p>Al pulsar <b>Calificar mi actividad</b> el servidor compila y ejecuta <b>todas</b> las pruebas sobre tu código actual. Cada paso vale lo mismo. La nota va de <b>0.0 a 5.0</b> y se aprueba con <b>3.0</b>.</p>
           <table class="tabla"><tr><th>Paso</th><th>Tu última comprobación</th></tr>${filas}</table>
-          <p style="color:var(--suave);font-size:14px">Puedes calificar varias veces: vale la última nota que envíes a tu profesor.</p>
-          <div class="acciones"><button class="btn primario grande" id="calificar">🧮 Calificar mi actividad</button></div>
-          <div class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></div>
+          <p style="color:var(--suave);font-size:14px">Puedes calificar varias veces. <b>Tu profesor ve todas tus notas</b> (la última y la mejor) directamente en el sistema: no tienes que enviarle nada.</p>
+          <div class="acciones"><button class="btn primario grande" id="calificar">🧮 Calificar mi actividad</button>
+            <span class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></span></div>
         </div>
         <div id="resultado-final"></div>
+        <div id="historial"></div>
       </div>`;
     $('#calificar').onclick = calificar;
-    if (revision) calificar();
-    else if (estado.nota && estado.nota.comprobante) pintarNota(estado.nota);
+    pintarHistorial();
   }
 
   async function calificar() {
@@ -383,47 +595,20 @@
     ocupado = true;
     const btn = $('#calificar');
     btn.disabled = true;
+    setCargando('Calificando todos los pasos en el servidor…');
     try {
-      const porPaso = {};
-      const evaluables = [];
-      A.pasos.forEach(p => {
-        const b = blancos(p.compilar);
-        if (b.length) porPaso[p.id] = { ok: 0, total: p.nPruebas, nota: 'Tiene espacios ____ sin completar' };
-        else evaluables.push(p);
-      });
-      if (evaluables.length) {
-        const r = await EV.evaluarTodo(A, evaluables, estado.archivos, setCargando);
-        evaluables.forEach(p => {
-          const rs = r[p.id] || { resultados: [] };
-          porPaso[p.id] = { ok: (rs.resultados || []).filter(x => x.ok).length, total: p.nPruebas, nota: rs.error || '' };
-        });
-      }
-      let suma = 0;
-      const detalle = A.pasos.map(p => {
-        const x = porPaso[p.id];
-        suma += x.ok / x.total;
-        return [p.id, x.ok, x.total];
-      });
-      const nota = Math.round((5 * suma / A.pasos.length) * 10) / 10;
-      const d = new Date();
-      const fecha = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-      const pistas = Object.values(estado.pistas).reduce((a, b) => a + b, 0);
-      const minutos = Math.round((Date.now() - (estado.inicio || Date.now())) / 60000);
-      if (revision) {
-        pintarRevision(nota, detalle, porPaso);
-      } else {
-        const archivos = {};
-        Object.keys(A.archivos).filter(n => !A.archivos[n].soloLectura).forEach(n => archivos[n] = estado.archivos[n]);
-        const c = { v: 1, act: A.id, nombre: estado.nombre, doc: estado.doc, nota, fecha, detalle, minutos, pistas, archivos };
-        const firmado = await Firma.crearComprobante(c);
-        estado.nota = { nota, fecha, detalle, porPaso, codigo: firmado.codigo, comprobante: firmado.texto, minutos, pistas };
-        guardar();
-        pintarNota(estado.nota);
-        pintarProgreso();
-      }
+      const archivos = {};
+      Object.keys(A.archivos).forEach(n => { if (!A.archivos[n].soloLectura) archivos[n] = estado.archivos[n]; });
+      cambios = {};
+      const r = await api('POST', '/api/calificar', { archivos });
+      if (r.progreso) estado.res = r.progreso;
+      entregas.unshift({ id: r.id, nota: r.nota, detalle: r.detalle, creado: r.fecha });
+      pintarNota(r);
+      pintarProgreso();
+      pintarHistorial();
     } catch (e) {
-      console.error(e);
-      $('#resultado-final').innerHTML = `<div class="aviso mal">No se pudo calificar: ${esc(e.message || e)}. Revisa tu conexión y vuelve a intentar.</div>`;
+      if (e.status === 401) { salir(); return; }
+      $('#resultado-final').innerHTML = `<div class="aviso mal">No se pudo calificar: ${esc(e.message)}</div>`;
     } finally {
       ocupado = false;
       btn.disabled = false;
@@ -431,64 +616,32 @@
     }
   }
 
-  function tablaDetalle(detalle, porPaso) {
-    return '<table class="tabla"><tr><th>Paso</th><th>Comprobaciones</th><th>Aporte a la nota</th></tr>' + detalle.map(([id, ok, total], i) => {
-      const p = A.pasos.find(x => x.id === id);
-      const extra = porPaso && porPaso[id] && porPaso[id].nota ? '<br><small style="color:var(--aviso)">' + esc(porPaso[id].nota) + '</small>' : '';
-      return `<tr><td>${i + 1}. ${esc(p ? p.titulo : id)}${extra}</td><td>${ok} / ${total}</td><td>${(5 / A.pasos.length * ok / total).toFixed(2)} / ${(5 / A.pasos.length).toFixed(2)}</td></tr>`;
-    }).join('') + '</table>';
-  }
+  function fecha(t) { return new Date(t).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }); }
 
   function pintarNota(n) {
     const aprueba = n.nota >= 3;
+    const filas = n.detalle.map((d, i) => {
+      const fallidas = (d.pruebas || []).filter(p => !p[1]).map(p => '<li>' + esc(p[0]) + '</li>').join('');
+      return `<tr><td>${i + 1}. ${esc(d.titulo)}${d.nota ? '<br><small style="color:var(--aviso)">' + esc(d.nota) + '</small>' : ''}${fallidas ? '<ul class="fallidas">' + fallidas + '</ul>' : ''}</td>
+        <td>${d.ok} / ${d.total}</td><td>${(5 / A.pasos.length * (d.total ? d.ok / d.total : 0)).toFixed(2)} / ${(5 / A.pasos.length).toFixed(2)}</td></tr>`;
+    }).join('');
     $('#resultado-final').innerHTML = `
       <div class="tarjeta">
         <div class="nota-grande">
           <div><div style="color:var(--suave);font-size:14px">Tu nota</div><div class="valor ${aprueba ? 'aprueba' : 'pierde'}">${n.nota.toFixed(1)}</div></div>
           <div><div style="font-size:20px;font-weight:700">${aprueba ? '¡Aprobaste la recuperación! 🎉' : 'Aún no alcanzas 3.0'}</div>
-          <div style="color:var(--suave)">${esc(estado.nombre)} · ${esc(estado.doc)} · ${esc(n.fecha)}</div>
-          ${aprueba ? '' : '<div style="margin-top:4px">Puedes volver a los pasos incompletos, corregir y calificar de nuevo.</div>'}</div>
+          <div style="color:var(--suave)">${esc(estudiante.nombre)} · ${esc(estudiante.doc)} · ${fecha(n.fecha || Date.now())}</div>
+          <div style="margin-top:4px">✔ Esta nota quedó registrada para tu profesor.${aprueba ? '' : ' Puedes volver a los pasos incompletos, corregir y calificar de nuevo.'}</div></div>
         </div>
-        ${tablaDetalle(n.detalle, n.porPaso)}
-      </div>
-      <div class="tarjeta">
-        <h3 style="margin-top:0">📨 Entrega a tu profesor</h3>
-        <p>Código de verificación de esta nota:</p>
-        <div class="codigo-ver" id="codigo">${esc(n.codigo)}</div>
-        <p style="margin-top:14px">Envía a tu profesor <b>el comprobante completo</b> (incluye tu código para que lo pueda revisar). Cópialo o descárgalo:</p>
-        <div class="campo"><textarea id="comprobante" readonly>${esc(n.comprobante)}</textarea></div>
-        <div class="acciones">
-          <button class="btn primario" id="copiar">📋 Copiar comprobante</button>
-          <button class="btn" id="descargar">⬇ Descargar .txt</button>
-        </div>
-        <p style="color:var(--suave);font-size:13px;margin-bottom:0">El código de verificación depende de tu nombre, documento, nota y fecha. Si alguien cambia cualquiera de esos datos, el código deja de coincidir.</p>
+        <table class="tabla"><tr><th>Paso</th><th>Pruebas</th><th>Aporte a la nota</th></tr>${filas}</table>
       </div>`;
-    const texto = () => `Actividad de recuperación: ${A.curso}\nEstudiante: ${estado.nombre}\nDocumento: ${estado.doc}\nNota: ${n.nota.toFixed(1)}\nFecha: ${n.fecha}\nCódigo de verificación: ${n.codigo}\n\nComprobante (no lo modifiques):\n${n.comprobante}\n`;
-    $('#copiar').onclick = async () => {
-      try { await navigator.clipboard.writeText(texto()); $('#copiar').textContent = '✔ Copiado'; }
-      catch (e) { const t = $('#comprobante'); t.select(); document.execCommand('copy'); $('#copiar').textContent = '✔ Copiado'; }
-    };
-    $('#descargar').onclick = () => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([texto()], { type: 'text/plain' }));
-      a.download = 'recuperacion-' + A.id + '-' + estado.doc.replace(/[^\w-]/g, '') + '.txt';
-      a.click();
-    };
   }
 
-  function pintarRevision(nota, detalle, porPaso) {
-    const igual = Math.abs(nota - revision.nota) < 0.05;
-    $('#resultado-final').innerHTML = `
-      <div class="tarjeta">
-        <h3 style="margin-top:0">Re-calificación del docente</h3>
-        <div class="nota-grande">
-          <div><div style="color:var(--suave);font-size:14px">Nota recalculada ahora</div><div class="valor ${nota >= 3 ? 'aprueba' : 'pierde'}">${nota.toFixed(1)}</div></div>
-          <div><div>Nota declarada en el comprobante: <b>${Number(revision.nota).toFixed(1)}</b></div>
-          <div class="aviso ${igual ? 'ok' : 'mal'}">${igual ? '✔ Coinciden: el código entregado produce esa nota.' : '✘ No coinciden: el código del comprobante NO produce la nota declarada.'}</div></div>
-        </div>
-        ${tablaDetalle(detalle, porPaso)}
-        <p style="color:var(--suave);font-size:14px">Puedes abrir cada paso (arriba) para leer el código del estudiante. En modo revisión nada se guarda.</p>
-      </div>`;
+  function pintarHistorial() {
+    const h = $('#historial');
+    if (!h || !entregas.length) return;
+    h.innerHTML = `<div class="tarjeta"><h3 style="margin-top:0">Tus calificaciones registradas</h3>
+      <table class="tabla"><tr><th>Fecha</th><th>Nota</th></tr>${entregas.slice(0, 10).map(e => `<tr><td>${fecha(e.creado)}</td><td><b>${Number(e.nota).toFixed(1)}</b></td></tr>`).join('')}</table></div>`;
   }
 
   window.addEventListener('DOMContentLoaded', iniciar);

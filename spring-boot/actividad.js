@@ -7,7 +7,7 @@ window.ACTIVIDAD = {
   duracion: '60 a 90 minutos',
   motor: 'java',
   javaCurso: 'spring',
-  aviso: '⚙️ <b>Importante:</b> tu código Java se compila de verdad en el navegador (con javac). Como un servidor Spring Boot completo no puede arrancar dentro de una página web, las peticiones HTTP se <b>simulan</b>: un mini-Spring lee tus anotaciones (<code>@GetMapping</code>, <code>@PathVariable</code>…) y llama tus métodos igual que lo haría Spring. La <b>primera</b> vez que compiles puede tardar hasta un minuto; después es más rápido. Se usa Java 8: no uses <code>var</code>, <code>record</code> ni <code>List.of</code>.',
+  aviso: '⚙️ Tu código se ejecuta <b>de verdad</b> en el servidor del curso: se compila con <code>javac</code> (Java 17) y corre sobre <b>Spring Boot 3</b> real. <b>▶ Ejecutar</b> arranca tu aplicación con su Tomcat embebido y le envía las peticiones HTTP de la pestaña <code>peticiones.http</code> (como Thunder Client); puedes cambiarlas. <b>✔ Comprobar</b> corre pruebas JUnit 5 con MockMvc. Los errores que ves son los que dan Java y Spring de verdad.',
   archivos: {
     'HolaController.java': { ruta: 'codigo/HolaController.java' },
     'SaludoController.java': { ruta: 'codigo/SaludoController.java' },
@@ -19,6 +19,8 @@ window.ACTIVIDAD = {
   pasos: [
     {
       id: 'p1',
+      ejecutar: {"peticiones": "GET /api/hola"},
+      ejecutar: {"peticiones": "GET /api/hola"},
       titulo: 'Tu primer endpoint: GET /api/hola',
       archivos: ['HolaController.java'],
       compilar: ['HolaController.java'],
@@ -50,7 +52,7 @@ public class SaludoController {
           <li>Marca el método <code>hola()</code> con <code>@GetMapping</code>.</li>
           <li>Haz que devuelva exactamente <code>"Hola desde Spring Boot"</code> (con comillas, es un String).</li>
         </ol>
-        <p>Luego pulsa <b>▶ Ejecutar</b> para ver la respuesta a <code>GET /api/hola</code> y <b>✔ Comprobar</b>.</p>`,
+        <p>Luego pulsa <b>▶ Ejecutar</b>: tu aplicación arranca de verdad y verás la respuesta a <code>GET /api/hola</code>. Después pulsa <b>✔ Comprobar</b>.</p>`,
       pistas: [
         'Las anotaciones se escriben con <code>@</code> y el nombre exacto, respetando mayúsculas: <code>@RestController</code>, <code>@GetMapping</code>.',
         'En <code>@RequestMapping("____")</code> el texto va entre las comillas que ya están: queda <code>@RequestMapping("/api")</code>.',
@@ -59,6 +61,8 @@ public class SaludoController {
     },
     {
       id: 'p2',
+      ejecutar: {"peticiones": "GET /api/saludo?nombre=Ana\nGET /api/saludo"},
+      ejecutar: {"peticiones": "GET /api/saludo?nombre=Ana\nGET /api/saludo"},
       titulo: 'Recibir datos por la URL con @RequestParam',
       archivos: ['SaludoController.java', 'SaludoResponse.java'],
       compilar: ['SaludoController.java', 'SaludoResponse.java'],
@@ -92,6 +96,8 @@ public String buscar(@RequestParam(defaultValue = "todos") String filtro) {
     },
     {
       id: 'p3',
+      ejecutar: {"codigo": "VacanteService servicio = new VacanteService();\nSystem.out.println(\"listar() -> \" + servicio.listar().size() + \" vacantes\");\nVacante v = servicio.buscarPorId(2L);\nSystem.out.println(\"buscarPorId(2L) -> \" + (v == null ? \"null\" : v.getTitulo()));\nSystem.out.println(\"buscarPorId(99L) -> \" + servicio.buscarPorId(99L));\nVacante nueva = servicio.crear(new Vacante(null, \"QA Tester\", \"Datos SAS\", 2100000));\nSystem.out.println(\"crear(...) asignó el id \" + nueva.getId() + \"; ahora hay \" + servicio.listar().size() + \" vacantes\");"},
+      ejecutar: {"codigo": "VacanteService servicio = new VacanteService();\nSystem.out.println(\"listar() -> \" + servicio.listar().size() + \" vacantes\");\nVacante v = servicio.buscarPorId(2L);\nSystem.out.println(\"buscarPorId(2L) -> \" + (v == null ? \"null\" : v.getTitulo()));\nSystem.out.println(\"buscarPorId(99L) -> \" + servicio.buscarPorId(99L));\nVacante nueva = servicio.crear(new Vacante(null, \"QA Tester\", \"Datos SAS\", 2100000));\nSystem.out.println(\"crear(...) asignó el id \" + nueva.getId() + \"; ahora hay \" + servicio.listar().size() + \" vacantes\");"},
       titulo: 'La capa de servicio (@Service)',
       archivos: ['VacanteService.java', 'Vacante.java'],
       compilar: ['VacanteService.java', 'Vacante.java'],
@@ -125,6 +131,8 @@ return null;                      // la recorrí toda y no estaba</code></pre>
     },
     {
       id: 'p4',
+      ejecutar: {"peticiones": "GET /api/vacantes\nGET /api/vacantes/2\nGET /api/vacantes/99"},
+      ejecutar: {"peticiones": "GET /api/vacantes\nGET /api/vacantes/2\nGET /api/vacantes/99"},
       titulo: 'Controller de vacantes: inyección, GET y @PathVariable',
       archivos: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
       compilar: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
@@ -162,6 +170,8 @@ public ... buscarPorId(@PathVariable Long id) { ... }</code></pre>
     },
     {
       id: 'p5',
+      ejecutar: {"peticiones": "POST /api/vacantes {\"titulo\": \"QA Tester\", \"empresa\": \"Datos SAS\", \"salario\": 2100000}\nPOST /api/vacantes {\"titulo\": \"\", \"empresa\": \"X\", \"salario\": 1000000}\nGET /api/vacantes"},
+      ejecutar: {"peticiones": "POST /api/vacantes {\"titulo\": \"QA Tester\", \"empresa\": \"Datos SAS\", \"salario\": 2100000}\nPOST /api/vacantes {\"titulo\": \"\", \"empresa\": \"X\", \"salario\": 1000000}\nGET /api/vacantes"},
       titulo: 'Crear vacantes: @PostMapping, @RequestBody y 201/400',
       archivos: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
       compilar: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
@@ -196,6 +206,8 @@ return ResponseEntity.status(HttpStatus.____).body(creada);</code></pre>
     },
     {
       id: 'p6',
+      ejecutar: {"peticiones": "GET /api/vacantes?empresa=tech\nDELETE /api/vacantes/1\nDELETE /api/vacantes/99\nGET /api/vacantes"},
+      ejecutar: {"peticiones": "GET /api/vacantes?empresa=tech\nDELETE /api/vacantes/1\nDELETE /api/vacantes/99\nGET /api/vacantes"},
       titulo: 'Integración: filtro por empresa y DELETE',
       archivos: ['VacanteService.java', 'VacanteController.java', 'Vacante.java'],
       compilar: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],

@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Saludo } from './Saludo';
+import { FormularioEstudiante } from './FormularioEstudiante';
+import { FiltroAprobados } from './FiltroAprobados';
 
 const INICIALES = [
   { id: 1, nombre: 'Ana', nota: 4.6 },

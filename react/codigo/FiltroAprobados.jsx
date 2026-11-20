@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ListaEstudiantes } from './ListaEstudiantes';
 
 export function FiltroAprobados({ estudiantes }) {
   // 1. Estado: ¿mostrar solo los aprobados? Empieza en false

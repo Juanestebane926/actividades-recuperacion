@@ -1,3 +1,5 @@
+import { EstadoBadge } from './EstadoBadge';
+
 // Recibe un arreglo de estudiantes: [{ id: 1, nombre: 'Ana', nota: 4.6 }, ...]
 
 export function ListaEstudiantes({ estudiantes }) {

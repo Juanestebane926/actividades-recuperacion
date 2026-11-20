@@ -1,0 +1,145 @@
+/* Panel del docente: avance, notas y código de cada estudiante. */
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const app = $('#app');
+  let datos = null;
+  let filtro = { texto: '', act: '', estado: '' };
+  let orden = { col: 'nombre', asc: true };
+
+  async function api(metodo, url, cuerpo) {
+    const r = await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+    let d = {};
+    try { d = await r.json(); } catch (e) { }
+    if (!r.ok) { const e = new Error(d.error || 'Error ' + r.status); e.status = r.status; throw e; }
+    return d;
+  }
+  const fecha = t => t ? new Date(t).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  const nota = n => n == null ? '<span style="color:var(--suave)">—</span>' : `<span class="nota ${n >= 3 ? 'ap' : 'rep'}">${Number(n).toFixed(1)}</span>`;
+
+  function login(error) {
+    app.innerHTML = `<div class="portada" style="max-width:440px"><div class="tarjeta">
+      <h1 style="font-size:24px">Panel docente</h1>
+      <p class="sub">Notas, avance y código de los estudiantes en las actividades de recuperación.</p>
+      <form id="f"><div class="campo"><label for="clave">Clave del panel</label><input id="clave" type="password" autocomplete="current-password" required></div>
+      <button class="btn primario" type="submit">Entrar</button></form>
+      <p class="aviso mal ${error ? '' : 'oculto'}" id="err">${esc(error || '')}</p>
+      <p style="color:var(--suave);font-size:13px">La clave es la variable <code>DOCENTE_CLAVE</code> del servidor.</p></div></div>`;
+    $('#f').onsubmit = async ev => {
+      ev.preventDefault();
+      try { await api('POST', '/api/docente/entrar', { clave: $('#clave').value }); cargar(); }
+      catch (e) { login(e.message); }
+    };
+  }
+
+  async function cargar() {
+    try { datos = await api('GET', '/api/docente/estudiantes'); }
+    catch (e) { if (e.status === 401) return login(); app.innerHTML = `<div class="aviso mal">${esc(e.message)}</div>`; return; }
+    pintar();
+  }
+
+  function pintar() {
+    const acts = datos.actividades;
+    const lista = datos.estudiantes.filter(e =>
+      (!filtro.act || e.actividad === filtro.act) &&
+      (!filtro.texto || (e.nombre + ' ' + e.doc).toLowerCase().includes(filtro.texto.toLowerCase())) &&
+      (!filtro.estado || (filtro.estado === 'aprobado' ? e.ultimaNota >= 3 : filtro.estado === 'reprobado' ? e.ultimaNota != null && e.ultimaNota < 3 : e.ultimaNota == null)));
+    const k = orden.col;
+    lista.sort((a, b) => {
+      const x = a[k] ?? -1, y = b[k] ?? -1;
+      const c = typeof x === 'string' ? x.localeCompare(y, 'es') : x - y;
+      return orden.asc ? c : -c;
+    });
+    const total = datos.estudiantes.filter(e => !filtro.act || e.actividad === filtro.act);
+    const conNota = total.filter(e => e.ultimaNota != null);
+    const aprob = conNota.filter(e => e.ultimaNota >= 3);
+    const th = (col, t) => `<th data-col="${col}">${t}${orden.col === col ? (orden.asc ? ' ▲' : ' ▼') : ''}</th>`;
+    app.innerHTML = `<div class="panel">
+      <div class="cab-panel"><h1>📊 Panel docente · Actividades de recuperación</h1>
+        <a class="btn" href="/api/docente/notas.csv">⬇ Descargar notas (Excel/CSV)</a>
+        <button class="btn" id="recargar">↻ Actualizar</button><button class="btn" id="salir">Salir</button></div>
+      <div class="resumen">
+        <div class="tarjeta"><div style="color:var(--suave);font-size:13px">Estudiantes</div><div class="num">${total.length}</div></div>
+        <div class="tarjeta"><div style="color:var(--suave);font-size:13px">Con nota</div><div class="num">${conNota.length}</div></div>
+        <div class="tarjeta"><div style="color:var(--suave);font-size:13px">Aprobados (última nota ≥ 3.0)</div><div class="num" style="color:var(--ok)">${aprob.length}</div></div>
+        <div class="tarjeta"><div style="color:var(--suave);font-size:13px">Promedio última nota</div><div class="num">${conNota.length ? (conNota.reduce((s, e) => s + e.ultimaNota, 0) / conNota.length).toFixed(2) : '—'}</div></div>
+      </div>
+      <div class="filtros">
+        <input id="buscar" placeholder="Buscar nombre o documento" value="${esc(filtro.texto)}">
+        <select id="act"><option value="">Todos los cursos</option>${acts.map(a => `<option value="${a.id}" ${filtro.act === a.id ? 'selected' : ''}>${esc(a.curso)}</option>`).join('')}</select>
+        <select id="estado"><option value="">Cualquier estado</option><option value="aprobado" ${filtro.estado === 'aprobado' ? 'selected' : ''}>Aprobados</option><option value="reprobado" ${filtro.estado === 'reprobado' ? 'selected' : ''}>Con nota &lt; 3.0</option><option value="sin" ${filtro.estado === 'sin' ? 'selected' : ''}>Sin calificar</option></select>
+        <span style="color:var(--suave);font-size:13px">${lista.length} mostrados · clic en una fila para ver el detalle y el código</span>
+      </div>
+      <div class="tabla-wrap"><table class="lista">
+        <tr>${th('curso', 'Curso')}${th('nombre', 'Nombre')}${th('doc', 'Documento')}<th>Pasos (pruebas que pasan)</th>${th('ultimaNota', 'Última nota')}${th('mejorNota', 'Mejor')}${th('entregas', 'Calif.')}${th('comprobaciones', 'Comprob.')}${th('ultimo', 'Última actividad')}</tr>
+        ${lista.map(e => `<tr class="fila" data-id="${e.id}"><td>${esc(e.curso)}</td><td>${esc(e.nombre)}</td><td>${esc(e.doc)}</td>
+          <td>${e.pasos.map((p, i) => `<span class="pp ${p ? (p[0] === p[1] ? 'ok' : 'medio') : ''}" title="Paso ${i + 1}${p ? ': ' + p[0] + '/' + p[1] : ': sin comprobar'}">${i + 1}</span>`).join('')}</td>
+          <td>${nota(e.ultimaNota)}</td><td>${nota(e.mejorNota)}</td><td>${e.entregas}</td><td>${e.comprobaciones}</td><td>${fecha(e.ultimo)}</td></tr>`).join('') || '<tr><td colspan="9" style="color:var(--suave)">Todavía no hay estudiantes.</td></tr>'}
+      </table></div></div>`;
+    $('#buscar').oninput = e => { filtro.texto = e.target.value; const p = e.target.selectionStart; pintar(); const b = $('#buscar'); b.focus(); b.setSelectionRange(p, p); };
+    $('#act').onchange = e => { filtro.act = e.target.value; pintar(); };
+    $('#estado').onchange = e => { filtro.estado = e.target.value; pintar(); };
+    $('#recargar').onclick = cargar;
+    $('#salir').onclick = async () => { await api('POST', '/api/docente/salir'); login(); };
+    app.querySelectorAll('th[data-col]').forEach(t => t.onclick = () => { orden = { col: t.dataset.col, asc: orden.col === t.dataset.col ? !orden.asc : true }; pintar(); });
+    app.querySelectorAll('tr.fila').forEach(f => f.onclick = () => detalle(+f.dataset.id));
+  }
+
+  async function detalle(id) {
+    const d = await api('GET', '/api/docente/estudiantes/' + id);
+    const dlg = $('#dialogo');
+    const det = $('#detalle');
+    const res = d.estado.res || {};
+    let archivo = d.editables[0];
+    const pintarDet = () => {
+      det.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:start;flex-wrap:wrap">
+          <div style="flex:1"><h2>${esc(d.nombre)}</h2><div style="color:var(--suave)">${esc(d.curso)} · Documento ${esc(d.doc)} · inició ${fecha(d.creado)} · última actividad ${fecha(d.ultimo)}</div></div>
+          <button class="btn" id="cerrar">✕ Cerrar</button></div>
+        <h3>Avance por paso (última comprobación)</h3>
+        <table class="tabla"><tr><th>Paso</th><th>Pruebas</th></tr>${d.pasos.map((p, i) => { const r = res[p.id]; return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${r ? r.ok + ' / ' + r.total : '—'}</td></tr>`; }).join('')}</table>
+        <h3>Calificaciones (${d.entregas.length})</h3>
+        ${d.entregas.length ? `<table class="tabla"><tr><th>Fecha</th><th>Nota</th><th>Detalle por paso</th><th></th></tr>${d.entregas.map(e => `<tr><td>${fecha(e.creado)}</td><td>${nota(e.nota)}</td>
+          <td style="white-space:normal">${e.detalle.map((x, i) => `${i + 1}: ${x.ok}/${x.total}`).join(' · ')}</td><td><button class="btn chico" data-recal="${e.id}">Re-calificar esta entrega</button></td></tr>`).join('')}</table>` : '<p style="color:var(--suave)">Aún no ha calificado.</p>'}
+        <div id="recal"></div>
+        <h3>Código actual del estudiante</h3>
+        <div class="pestanas-doc">${d.editables.map(n => `<button data-f="${esc(n)}" class="${n === archivo ? 'activa' : ''}">${esc(n)}</button>`).join('')}</div>
+        <pre class="codigo">${esc(d.estado.archivos[archivo] || '')}</pre>
+        <div class="acciones" style="margin-top:10px">
+          <button class="btn" id="recal-actual">🧮 Re-calificar el código actual</button>
+          <button class="btn" id="pin">🔑 Restablecer PIN</button>
+          <span class="espacio"></span>
+          <button class="btn peligro" id="borrar">🗑 Borrar estudiante</button>
+        </div>
+        <p style="color:var(--suave);font-size:13px">Comprobaciones: ${d.intentos.filter(x => x.modo === 'comprobar').length} · Ejecuciones: ${d.intentos.filter(x => x.modo === 'ejecutar').length}</p>`;
+      $('#cerrar').onclick = () => dlg.close();
+      det.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { archivo = b.dataset.f; pintarDet(); });
+      const recal = async (entrega) => {
+        $('#recal').innerHTML = '<div class="estado-carga"><span class="girando"></span> Ejecutando todas las pruebas…</div>';
+        try {
+          const r = await api('POST', `/api/docente/estudiantes/${id}/recalificar`, entrega ? { entrega } : {});
+          $('#recal').innerHTML = `<div class="aviso ${r.nota >= 3 ? 'ok' : 'mal'}">Nota recalculada ahora: <b>${r.nota.toFixed(1)}</b> (${r.detalle.map((x, i) => `${i + 1}: ${x.ok}/${x.total}`).join(' · ')})</div>`;
+        } catch (e) { $('#recal').innerHTML = `<div class="aviso mal">${esc(e.message)}</div>`; }
+      };
+      det.querySelectorAll('[data-recal]').forEach(b => b.onclick = () => recal(+b.dataset.recal));
+      $('#recal-actual').onclick = () => recal(null);
+      $('#pin').onclick = async () => {
+        const pin = String(Math.floor(1000 + Math.random() * 9000));
+        await api('POST', `/api/docente/estudiantes/${id}/pin`, { pin });
+        $('#recal').innerHTML = `<div class="aviso info">Nuevo PIN de ${esc(d.nombre)}: <b style="font-size:18px">${pin}</b>. Díselo al estudiante (con su documento ${esc(d.doc)} puede volver a entrar).</div>`;
+      };
+      $('#borrar').onclick = async () => {
+        const b = $('#borrar');
+        if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = '¿Seguro? Se borra todo su avance y sus notas. Pulsa otra vez'; return; }
+        await api('DELETE', '/api/docente/estudiantes/' + id);
+        dlg.close();
+        cargar();
+      };
+    };
+    pintarDet();
+    if (!dlg.open) dlg.showModal();
+  }
+
+  cargar();
+})();
