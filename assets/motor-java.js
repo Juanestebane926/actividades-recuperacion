@@ -32,7 +32,7 @@ window.MotorJava = (function () {
       if (!calentado) aviso && aviso('Preparando Java en tu navegador (solo la primera vez puede tardar 20–60 s)…');
       await iniciar(aviso);
       n++;
-      const dir = '/str/r' + n + '/';
+      const dir = '/str/'; // CheerpJ no admite subcarpetas en /str/: se sobrescribe el archivo
       const rutas = [];
       for (const nombre of Object.keys(archivos)) {
         cheerpjAddStringFile(dir + nombre, enc.encode(archivos[nombre]));
@@ -74,10 +74,10 @@ window.MotorJava = (function () {
     const lineas = t.split('\n');
     const errores = [];
     let actual = null;
-    const re = /^(\/str\/r\d+\/)?([^:\s]+\.java):(\d+): (?:error|warning): (.*)$/;
+    const re = /^(?:\/str\/)?([^:\s]+\.java):(\d+): (?:error|warning): (.*)$/;
     lineas.forEach(l => {
       const m = l.match(re);
-      if (m) { actual = { archivo: m[2], linea: +m[3], mensaje: m[4], contexto: '' }; errores.push(actual); }
+      if (m) { actual = { archivo: m[1], linea: +m[2], mensaje: m[3], contexto: '' }; errores.push(actual); }
       else if (actual && !/^\d+ errors?$/.test(l.trim())) actual.contexto += (actual.contexto ? '\n' : '') + l;
     });
     if (!errores.length && t.trim()) errores.push({ archivo: '', linea: 0, mensaje: t.trim(), contexto: '' });
