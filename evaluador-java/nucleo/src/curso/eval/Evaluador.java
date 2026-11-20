@@ -39,19 +39,44 @@ public class Evaluador {
     static final ObjectMapper JSON = new ObjectMapper();
     static final PrintStream SALIDA_REAL = new PrintStream(new FileOutputStream(FileDescriptor.out), true, StandardCharsets.UTF_8);
     static final ByteArrayOutputStream CAPTURA = new ByteArrayOutputStream();
+    static final JavaCompiler JAVAC = ToolProvider.getSystemJavaCompiler();
+    static final StandardJavaFileManager FM = JAVAC.getStandardFileManager(null, Locale.ROOT, StandardCharsets.UTF_8);
+
+    /**
+     * --esperar  : se precalienta, atiende UN trabajo y termina.
+     * --servidor : se precalienta y atiende trabajos uno tras otro (uno por línea en stdin). Cada
+     *              trabajo usa sus propios classloaders, así el código de un estudiante no ve el de
+     *              otro; el proceso se recicla después de MAX_TRABAJOS para no acumular memoria.
+     */
+    static final int MAX_TRABAJOS = Integer.getInteger("eval.maxTrabajos", 30);
 
     public static void main(String[] args) throws Exception {
-        String rutaTrabajo;
-        if (args.length > 0 && args[0].equals("--esperar")) {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+        if (args.length > 0 && (args[0].equals("--esperar") || args[0].equals("--servidor"))) {
+            boolean servidor = args[0].equals("--servidor");
             calentar();
             SALIDA_REAL.println("@@LISTO@@");
             SALIDA_REAL.flush();
-            BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-            rutaTrabajo = in.readLine();
-            if (rutaTrabajo == null) System.exit(0);
+            int hechos = 0;
+            String ruta;
+            while ((ruta = in.readLine()) != null) {
+                atender(ruta);
+                hechos++;
+                if (!servidor || hechos >= MAX_TRABAJOS || memoriaAlta()) break;
+            }
         } else {
-            rutaTrabajo = args[0];
+            atender(args[0]);
         }
+        Runtime.getRuntime().halt(0); // Tomcat/Spring pueden dejar hilos vivos: salimos ya
+    }
+
+    static boolean memoriaAlta() {
+        Runtime r = Runtime.getRuntime();
+        return (r.totalMemory() - r.freeMemory()) > r.maxMemory() * 0.8;
+    }
+
+    static void atender(String rutaTrabajo) {
+        CAPTURA.reset();
         ObjectNode r;
         try {
             JsonNode trabajo = JSON.readTree(new File(rutaTrabajo.trim()));
@@ -61,10 +86,16 @@ public class Evaluador {
             StringWriter sw = new StringWriter();
             t.printStackTrace(new PrintWriter(sw));
             r.put("errorInterno", sw.toString());
+        } finally {
+            Thread.currentThread().setContextClassLoader(Evaluador.class.getClassLoader());
         }
-        SALIDA_REAL.println("@@RESULTADO@@" + JSON.writeValueAsString(r));
+        try {
+            SALIDA_REAL.println("@@RESULTADO@@" + JSON.writeValueAsString(r));
+        } catch (Exception e) {
+            SALIDA_REAL.println("@@RESULTADO@@{\"errorInterno\":\"no se pudo serializar el resultado\"}");
+        }
         SALIDA_REAL.flush();
-        Runtime.getRuntime().halt(0); // Tomcat/Spring dejan hilos vivos: salimos ya
+        System.gc();
     }
 
     /** Carga javac, JUnit y (si existe) el soporte del curso para que el primer trabajo sea rápido. */
@@ -144,15 +175,15 @@ public class Evaluador {
     /** Compila con javac. Devuelve la lista de errores (vacía si compiló). */
     ArrayNode compilar(Collection<Path> fuentes, Path salida, String cpExtra) throws IOException {
         Files.createDirectories(salida);
-        JavaCompiler jc = ToolProvider.getSystemJavaCompiler();
         DiagnosticCollector<JavaFileObject> diag = new DiagnosticCollector<>();
         String cp = classpath + (cpExtra == null ? "" : File.pathSeparator + cpExtra);
         List<String> opciones = List.of("--release", "17", "-parameters", "-encoding", "UTF-8", "-g",
                 "-Xmaxerrs", "30", "-cp", cp, "-d", salida.toString());
         ArrayNode errores = JSON.createArrayNode();
-        try (StandardJavaFileManager fm = jc.getStandardFileManager(diag, Locale.ROOT, StandardCharsets.UTF_8)) {
+        synchronized (JAVAC) {
+            StandardJavaFileManager fm = FM;
             StringWriter otros = new StringWriter();
-            boolean ok = jc.getTask(otros, fm, diag, opciones, null, fm.getJavaFileObjectsFromPaths(fuentes)).call();
+            boolean ok = JAVAC.getTask(otros, fm, diag, opciones, null, fm.getJavaFileObjectsFromPaths(fuentes)).call();
             for (Diagnostic<? extends JavaFileObject> d : diag.getDiagnostics()) {
                 if (d.getKind() != Diagnostic.Kind.ERROR) continue;
                 String archivo = d.getSource() == null ? "" : Paths.get(d.getSource().toUri()).getFileName().toString();

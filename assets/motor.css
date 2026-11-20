@@ -96,7 +96,19 @@ table.tabla th { background: var(--panel2); }
 .pestanas button .candado { font-size: 11px; opacity: .8; }
 #editor { flex: 1; min-height: 0; position: relative; }
 #editor .CodeMirror { position: absolute; inset: 0; height: auto; font-family: var(--mono); font-size: 13.5px; }
-.ayuda-http { flex: 0 0 auto; font-size: 12px; color: var(--suave); background: var(--panel2); padding: 4px 10px; border-top: 1px solid var(--borde); }
+.peticiones { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; background: var(--panel); }
+.ayuda-api { font-size: 13px; color: var(--suave); margin: 0 0 8px; }
+.pet { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto auto; gap: 6px; align-items: center; padding: 6px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 6px; background: var(--panel2); }
+.pet select, .pet input, .pet textarea { font: 13px var(--mono); padding: 5px 7px; border: 1px solid var(--borde); border-radius: 6px; background: var(--panel); color: var(--texto); min-width: 0; }
+.pet select { font-weight: 800; }
+.pet .m-GET { color: #2b8a3e; } .pet .m-POST { color: #e67700; } .pet .m-PUT { color: #1971c2; } .pet .m-DELETE { color: #c92a2a; }
+.pet textarea { grid-column: 1 / -1; resize: vertical; min-height: 34px; }
+.CodeMirror-hints { font-family: var(--mono); font-size: 13px; max-height: 240px; z-index: 50; }
+.CodeMirror-hint { display: flex; gap: 14px; justify-content: space-between; padding: 2px 8px; }
+.CodeMirror-hint .sug-detalle { color: #868e96; font-size: 11.5px; }
+li.CodeMirror-hint-active .sug-detalle { color: #e7ecff; }
+.sug-clase .sug-texto, .sug-anotacion .sug-texto { color: #1971c2; font-weight: 700; }
+li.CodeMirror-hint-active .sug-texto { color: #fff; }
 .cm-blanco { background: rgba(255, 196, 0, .35); border-bottom: 2px solid #ffc400; }
 .cm-linea-error { background: rgba(255, 80, 80, .18); }
 .acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }

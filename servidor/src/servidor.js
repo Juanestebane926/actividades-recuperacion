@@ -10,7 +10,7 @@ import { PUERTO, HOST, RAIZ, SERVIDOR, DOCENTE_CLAVE, CLAVE_GENERADA, SECRETO, M
 import { Estudiantes, Progreso, Intentos, Entregas, pinCorrecto, resumen } from './db.js';
 import { ACTIVIDADES, archivosValidos } from './actividades.js';
 import { evaluarPaso, calificar } from './evaluar.js';
-import { javaDisponible, precalentar } from './java.js';
+import { javaDisponible, precalentar, precalentarCurso } from './java.js';
 import { enCola } from './procesos.js';
 
 // ---------------------------------------------------------------- utilidades HTTP
@@ -145,11 +145,13 @@ const rutasApi = {
       Progreso.guardar(e.id, estadoInicial(act));
     }
     Estudiantes.tocar(e.id);
+    if (act.motor.lib) precalentarCurso(act.motor.lib);   // la JVM arranca mientras el estudiante lee
     enviarJson(res, 200, { token: e.token, ...publico(e, estadoDe(e, act)) });
   },
 
   'GET /api/yo': async (req, res) => {
     const { e, act } = estudianteDe(req);
+    if (act.motor.lib) precalentarCurso(act.motor.lib);
     enviarJson(res, 200, publico(e, estadoDe(e, act)));
   },
 

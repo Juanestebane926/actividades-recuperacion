@@ -241,7 +241,7 @@
           <div class="editor-caja">
             <div class="pestanas" id="pestanas"></div>
             <div id="editor"></div>
-            <div class="ayuda-http oculto" id="ayuda-http">Una petición por línea: <code>GET /ruta</code> · <code>POST /ruta {"campo": "valor"}</code>${A.id === 'java-web' ? ' · <code>POST /ruta nombre=Ana&amp;edad=17</code>' : ''} · <code>DELETE /ruta/1</code>. Las líneas con # se ignoran.</div>
+            <div class="peticiones oculto" id="peticiones"></div>
           </div>
           <div class="acciones">
             <button class="btn" id="ejecutar" title="Corre tu código de verdad y muestra lo que hace">▶ Ejecutar</button>
@@ -282,7 +282,7 @@
     }
     b.dataset.confirmar = '';
     b.textContent = '↺ Reiniciar archivo';
-    if (archivoActual === HTTP) { delete estado.peticiones[paso.id]; editor.setValue(paso.ejecutar.peticiones); guardar(); return; }
+    if (archivoActual === HTTP) { delete estado.peticiones[paso.id]; pintarPeticiones(paso); guardar(); return; }
     estado.archivos[archivoActual] = originales[archivoActual];
     cambios[archivoActual] = originales[archivoActual];
     editor.setValue(originales[archivoActual]);
@@ -320,25 +320,76 @@
     const abrir = n => {
       archivoActual = n;
       const esHttp = n === HTTP;
-      editor.setOption('readOnly', !esHttp && !!A.archivos[n].soloLectura);
-      editor.setOption('mode', esHttp ? 'text/plain' : modo);
-      editor.setValue(esHttp ? (estado.peticiones[paso.id] ?? paso.ejecutar.peticiones) : estado.archivos[n]);
+      $('#editor').classList.toggle('oculto', esHttp);
+      $('#peticiones').classList.toggle('oculto', !esHttp);
+      tabs.querySelectorAll('button').forEach(b => b.classList.toggle('activa', b.dataset.n === n));
+      $('#reiniciar').textContent = esHttp ? '↺ Restaurar ejemplos' : '↺ Reiniciar archivo';
+      if (esHttp) { pintarPeticiones(paso); return; }
+      editor.setOption('readOnly', !!A.archivos[n].soloLectura);
+      editor.setValue(estado.archivos[n]);
       editor.clearHistory();
       marcarBlancos();
-      $('#ayuda-http').classList.toggle('oculto', !esHttp);
-      tabs.querySelectorAll('button').forEach(b => b.classList.toggle('activa', b.dataset.n === n));
       const primero = editor.getValue().indexOf('____');
-      if (primero >= 0 && !esHttp) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
+      if (primero >= 0) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
       setTimeout(() => editor.refresh(), 0);
     };
+    if (window.Sugerencias) Sugerencias.activar(editor, { A, archivos: () => estado.archivos, actual: () => archivoActual });
     const nombres = paso.archivos.slice();
     let h = nombres.map(n => `<button data-n="${esc(n)}">${esc(n)}${A.archivos[n].soloLectura ? ' <span class="candado" title="Solo lectura">🔒</span>' : ''}</button>`).join('');
-    if (tienePeticiones(paso)) h += `<button data-n="${HTTP}" class="http" title="Peticiones HTTP que envía ▶ Ejecutar (como Thunder Client)">🌐 ${HTTP}</button>`;
+    if (tienePeticiones(paso)) h += `<button data-n="${HTTP}" class="http" title="Prueba tu API como en Thunder Client">🌐 Probar la API</button>`;
     tabs.innerHTML = h;
     tabs.querySelectorAll('button').forEach(b => b.onclick = () => abrir(b.dataset.n));
     abrir(nombres.find(n => !A.archivos[n].soloLectura) || nombres[0]);
     crearEditor.abrir = abrir;
     setTimeout(() => editor.refresh(), 50);
+  }
+
+  // ------------------------------------------------------------------ probar la API (como Thunder Client)
+  const METODOS = ['GET', 'POST', 'PUT', 'DELETE'];
+  function leerPeticiones(texto) {
+    return String(texto || '').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => {
+      const m = l.match(/^(GET|POST|PUT|PATCH|DELETE)\s+(\S+)(?:\s+([\s\S]+))?$/i);
+      return m ? { metodo: m[1].toUpperCase(), ruta: m[2], cuerpo: m[3] || '' } : { metodo: 'GET', ruta: l, cuerpo: '' };
+    });
+  }
+  function textoPeticiones(filas) {
+    return filas.filter(f => f.ruta.trim()).map(f => {
+      let c = (f.cuerpo || '').trim();
+      try { if (/^[[{]/.test(c)) c = JSON.stringify(JSON.parse(c)); } catch (e) { c = c.replace(/\s*\n\s*/g, ' '); }
+      const ruta = f.ruta.trim().startsWith('/') ? f.ruta.trim() : '/' + f.ruta.trim();
+      return f.metodo + ' ' + ruta.replace(/\s+/g, '') + (c && (f.metodo === 'POST' || f.metodo === 'PUT') ? ' ' + c : '');
+    }).join('\n');
+  }
+  function pintarPeticiones(paso) {
+    const cont = $('#peticiones');
+    const filas = leerPeticiones(estado.peticiones[paso.id] ?? paso.ejecutar.peticiones);
+    const ejemploCuerpo = A.id === 'java-web' ? 'nombre=Ana&edad=17&nota=4.5' : '{"titulo": "QA Tester", "empresa": "Datos SAS", "salario": 2100000}';
+    const guardarFilas = () => { estado.peticiones[paso.id] = textoPeticiones(filas); guardar(); };
+    const pintar = () => {
+      cont.innerHTML = `
+        <p class="ayuda-api">Aquí pruebas tu API como en <b>Thunder Client</b>. Con <b>▶ Enviar todas</b> tu aplicación arranca de verdad y recibe estas peticiones <b>en orden</b> (lo que crea un POST lo ve el GET de después). Con el ▶ de una fila envías solo esa.</p>
+        ${filas.map((f, i) => `
+          <div class="pet" data-i="${i}">
+            <select class="pet-metodo m-${f.metodo}">${METODOS.map(m => `<option ${m === f.metodo ? 'selected' : ''}>${m}</option>`).join('')}</select>
+            <input class="pet-ruta" value="${esc(f.ruta)}" placeholder="/api/ruta?param=valor" spellcheck="false">
+            <button class="btn chico pet-enviar" title="Enviar solo esta petición">▶</button>
+            <button class="btn chico pet-quitar" title="Quitar">✕</button>
+            ${f.metodo === 'POST' || f.metodo === 'PUT' ? `<textarea class="pet-cuerpo" rows="2" spellcheck="false" placeholder="Cuerpo, por ejemplo: ${esc(ejemploCuerpo)}">${esc(f.cuerpo)}</textarea>` : ''}
+          </div>`).join('')}
+        <div class="acciones"><button class="btn chico" id="pet-agregar">＋ Agregar petición</button><span class="espacio"></span><button class="btn primario chico" id="pet-todas">▶ Enviar todas</button></div>`;
+      cont.querySelectorAll('.pet').forEach(d => {
+        const i = +d.dataset.i;
+        d.querySelector('.pet-metodo').onchange = e => { filas[i].metodo = e.target.value; guardarFilas(); pintar(); };
+        d.querySelector('.pet-ruta').oninput = e => { filas[i].ruta = e.target.value; guardarFilas(); };
+        const c = d.querySelector('.pet-cuerpo');
+        if (c) c.oninput = e => { filas[i].cuerpo = e.target.value; guardarFilas(); };
+        d.querySelector('.pet-quitar').onclick = () => { filas.splice(i, 1); guardarFilas(); pintar(); };
+        d.querySelector('.pet-enviar').onclick = () => evaluar(paso, 'ejecutar', textoPeticiones([filas[i]]));
+      });
+      $('#pet-agregar').onclick = () => { filas.push({ metodo: 'GET', ruta: '/api/', cuerpo: '' }); guardarFilas(); pintar(); const r = cont.querySelectorAll('.pet-ruta'); r[r.length - 1].focus(); };
+      $('#pet-todas').onclick = () => evaluar(paso, 'ejecutar');
+    };
+    pintar();
   }
 
   let reloj = null;
@@ -364,7 +415,7 @@
     return r;
   }
 
-  async function evaluar(paso, modo) {
+  async function evaluar(paso, modo, soloPeticiones) {
     if (ocupado) return;
     ocupado = true;
     ['#ejecutar', '#comprobar', '#reiniciar'].forEach(s => { const b = $(s); if (b) b.disabled = true; });
@@ -378,7 +429,7 @@
       paso.compilar.forEach(n => { if (!A.archivos[n].soloLectura) archivos[n] = estado.archivos[n]; });
       cambios = {};
       const cuerpo = { paso: paso.id, modo, archivos };
-      if (modo === 'ejecutar' && tienePeticiones(paso)) cuerpo.peticiones = estado.peticiones[paso.id] ?? paso.ejecutar.peticiones;
+      if (modo === 'ejecutar' && tienePeticiones(paso)) cuerpo.peticiones = soloPeticiones || (estado.peticiones[paso.id] ?? paso.ejecutar.peticiones);
       const res = await api('POST', '/api/evaluar', cuerpo);
       marcarGuardado('✓ Guardado');
       if (res.progreso) { estado.res = res.progreso; pintarProgreso(); }
@@ -505,6 +556,7 @@
         preview = vistaPrevia(res.js);
         h += '<div style="font-weight:600;font-size:14px;margin:0 0 4px">Tu app funcionando (puedes usarla):</div>';
       } else if (res.http) {
+        h += `<p class="vacio" style="margin-top:0">Estas peticiones se enviaron a tu app. Cámbialas o agrega otras en la pestaña <a href="#" id="ir-api">🌐 Probar la API</a>.</p>`;
         h += htmlHttp(res.http);
         if (res.consola && res.consola.trim()) {
           const fallo = /FAILED|Exception/.test(res.http.arranque || '');
@@ -520,6 +572,8 @@
     }
     s.innerHTML = h;
     if (preview) s.appendChild(preview);
+    const irApi = $('#ir-api');
+    if (irApi) irApi.onclick = ev => { ev.preventDefault(); crearEditor.abrir(HTTP); };
     s.querySelectorAll('a[data-a]').forEach(a => a.onclick = ev => {
       ev.preventDefault();
       if (!pasoActual.archivos.includes(a.dataset.a)) return;
