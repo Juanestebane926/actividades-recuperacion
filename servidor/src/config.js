@@ -28,3 +28,6 @@ export const DOCENTE_CLAVE = clave;
 export const SECRETO = crypto.createHash('sha256').update('sesiones:' + (env.SECRETO || clave)).digest();
 
 export const TIEMPOS = { comprobar: 60_000, ejecutar: 45_000, calificar: 180_000 };
+
+// Orígenes que pueden llamar a la API (la página publicada en GitHub Pages). '*' = cualquiera.
+export const ORIGENES = (env.ORIGENES || '*').split(',').map(x => x.trim()).filter(Boolean);

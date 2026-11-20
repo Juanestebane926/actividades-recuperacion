@@ -6,7 +6,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { PUERTO, HOST, RAIZ, SERVIDOR, DOCENTE_CLAVE, CLAVE_GENERADA, SECRETO, MAX_PARALELO } from './config.js';
+import { PUERTO, HOST, RAIZ, SERVIDOR, DOCENTE_CLAVE, CLAVE_GENERADA, SECRETO, MAX_PARALELO, ORIGENES } from './config.js';
 import { Estudiantes, Progreso, Intentos, Entregas, pinCorrecto, resumen } from './db.js';
 import { ACTIVIDADES, archivosValidos } from './actividades.js';
 import { evaluarPaso, calificar } from './evaluar.js';
@@ -44,16 +44,18 @@ function cookies(req) {
   return r;
 }
 
-// ---------------------------------------------------------------- sesión del docente (cookie firmada)
+// ---------------------------------------------------------------- sesión del docente (token firmado)
+// Se usa un token en la cabecera X-Docente (y no una cookie) porque la página puede estar en otro
+// dominio (GitHub Pages) que la API.
 function firmar(texto) { return crypto.createHmac('sha256', SECRETO).update(texto).digest('base64url'); }
-function cookieDocente() {
+function tokenDocente() {
   const exp = Date.now() + 12 * 3600_000;
-  return 'docente=' + exp + '.' + firmar('docente:' + exp) + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200';
+  return exp + '.' + firmar('docente:' + exp);
 }
 function esDocente(req) {
-  const c = cookies(req).docente;
+  const c = req.headers['x-docente'] || new URL(req.url, 'http://x').searchParams.get('docente') || cookies(req).docente;
   if (!c) return false;
-  const [exp, f] = c.split('.');
+  const [exp, f] = String(c).split('.');
   if (!exp || !f || Number(exp) < Date.now()) return false;
   const esperado = firmar('docente:' + exp);
   return f.length === esperado.length && crypto.timingSafeEqual(Buffer.from(f), Buffer.from(esperado));
@@ -215,10 +217,10 @@ const rutasApi = {
     const ip = 'docente|' + (req.socket.remoteAddress || '');
     if (bloqueado(ip)) fallar(429, 'Demasiados intentos. Espera 15 minutos.');
     if (!claveCorrecta(b.clave || '')) { fallo(ip); fallar(401, 'Clave incorrecta.'); }
-    enviarJson(res, 200, { ok: true }, { 'Set-Cookie': cookieDocente() });
+    enviarJson(res, 200, { ok: true, token: tokenDocente() });
   },
   'POST /api/docente/salir': async (req, res) => {
-    enviarJson(res, 200, { ok: true }, { 'Set-Cookie': 'docente=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0' });
+    enviarJson(res, 200, { ok: true });
   },
   'GET /api/docente/estudiantes': async (req, res) => {
     soloDocente(req);
@@ -342,10 +344,26 @@ function servirEstatico(req, res) {
 }
 
 // ---------------------------------------------------------------- servidor
+/** CORS: la página (GitHub Pages) llama a esta API desde otro dominio. */
+function cors(req, res) {
+  const origen = req.headers.origin;
+  if (!origen) return true;
+  const permitido = ORIGENES.includes('*') || ORIGENES.includes(origen) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origen);
+  if (!permitido) return false;
+  res.setHeader('Access-Control-Allow-Origin', origen);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Docente');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  return true;
+}
+
 const servidor = http.createServer(async (req, res) => {
   try {
     const ruta = req.url.split('?')[0];
     if (ruta.startsWith('/api/')) {
+      if (!cors(req, res)) fallar(403, 'Origen no permitido');
+      if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
       const h = rutasApi[req.method + ' ' + ruta];
       if (h) return await h(req, res);
       const m = ruta.match(/^\/api\/docente\/estudiantes\/(\d+)(?:\/(\w+))?$/);

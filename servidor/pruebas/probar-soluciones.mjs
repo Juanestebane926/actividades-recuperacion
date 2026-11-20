@@ -13,7 +13,7 @@ let fallos = 0;
 async function api(metodo, url, cuerpo, token, cookie) {
   const r = await fetch(URL_BASE + url, {
     method: metodo,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(cookie ? { Cookie: cookie } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(cookie ? { 'X-Docente': cookie } : {}) },
     body: cuerpo ? JSON.stringify(cuerpo) : undefined,
   });
   const d = await r.json().catch(() => ({}));
@@ -61,8 +61,8 @@ for (const [id, dir] of Object.entries(carpetas)) {
   console.log(`  ${n.d.nota === 5 ? '✔' : '✘'} nota con la solución: ${n.d.nota} (${Date.now() - t2} ms)`);
   if (n.d.nota !== 5) { fallos++; console.log(JSON.stringify(n.d.detalle, null, 1).slice(0, 2000)); }
   if (CLAVE) {
-    const { r } = await api('POST', '/api/docente/entrar', { clave: CLAVE });
-    const cookie = r.headers.get('set-cookie').split(';')[0];
+    const { d: ent } = await api('POST', '/api/docente/entrar', { clave: CLAVE });
+    const cookie = ent.token;
     const { d: lista } = await api('GET', '/api/docente/estudiantes', null, null, cookie);
     const yo = lista.estudiantes.find(x => x.doc === doc);
     console.log(`  panel docente: ${yo ? 'aparece con última nota ' + yo.ultimaNota : '✘ no aparece'}`);

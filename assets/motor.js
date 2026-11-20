@@ -10,6 +10,7 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const HTTP = 'peticiones.http';
+  const API = (window.API_URL || '').replace(/\/$/, '');
   let app = null;
 
   let token = null, estudiante = null, estado = null, entregas = [];
@@ -21,7 +22,7 @@
   async function api(metodo, url, cuerpo) {
     let r;
     try {
-      r = await fetch(url, {
+      r = await fetch(API + url, {
         method: metodo,
         headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}),
         body: cuerpo ? JSON.stringify(cuerpo) : undefined
@@ -531,7 +532,7 @@
     if (window.innerWidth < 900) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  /** Vista previa de React: corre en un iframe aislado con React 18 (servido por el propio servidor). */
+  /** Vista previa de React: corre en un iframe aislado con React 18. */
   function vistaPrevia(js) {
     const f = document.createElement('iframe');
     f.className = 'preview';
@@ -558,9 +559,8 @@
         render() { return this.state.error ? React.createElement('div', { className: 'falla' }, 'Tu componente lanzó un error: ' + this.state.error.message) : this.props.children; }
       }
       window.__montar = el => ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Limite, null, el));`;
-    const origen = location.origin;
     f.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style>
-      <script src="${origen}/vendor/react.js"><\/script><script src="${origen}/vendor/react-dom.js"><\/script></head>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.development.js"><\/script><script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.development.js"><\/script></head>
       <body><div id="root"></div><pre id="consola"></pre><script>${pre}<\/script><script>${js.replace(/<\/script/gi, '<\\/script')}<\/script></body></html>`;
     return f;
   }

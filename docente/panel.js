@@ -8,8 +8,13 @@
   let filtro = { texto: '', act: '', estado: '' };
   let orden = { col: 'nombre', asc: true };
 
+  const API = (window.API_URL || '').replace(/\/$/, '');
+  let token = null;
+  try { token = sessionStorage.getItem('rec2:docente'); } catch (e) { }
   async function api(metodo, url, cuerpo) {
-    const r = await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json' }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+    const h = { 'Content-Type': 'application/json' };
+    if (token) h['X-Docente'] = token;
+    const r = await fetch(API + url, { method: metodo, headers: h, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
     let d = {};
     try { d = await r.json(); } catch (e) { }
     if (!r.ok) { const e = new Error(d.error || 'Error ' + r.status); e.status = r.status; throw e; }
@@ -28,7 +33,12 @@
       <p style="color:var(--suave);font-size:13px">La clave es la variable <code>DOCENTE_CLAVE</code> del servidor.</p></div></div>`;
     $('#f').onsubmit = async ev => {
       ev.preventDefault();
-      try { await api('POST', '/api/docente/entrar', { clave: $('#clave').value }); cargar(); }
+      try {
+        const d = await api('POST', '/api/docente/entrar', { clave: $('#clave').value });
+        token = d.token;
+        try { sessionStorage.setItem('rec2:docente', token); } catch (e) { }
+        cargar();
+      }
       catch (e) { login(e.message); }
     };
   }
@@ -57,7 +67,7 @@
     const th = (col, t) => `<th data-col="${col}">${t}${orden.col === col ? (orden.asc ? ' ▲' : ' ▼') : ''}</th>`;
     app.innerHTML = `<div class="panel">
       <div class="cab-panel"><h1>📊 Panel docente · Actividades de recuperación</h1>
-        <a class="btn" href="/api/docente/notas.csv">⬇ Descargar notas (Excel/CSV)</a>
+        <button class="btn" id="csv">⬇ Descargar notas (Excel/CSV)</button>
         <button class="btn" id="recargar">↻ Actualizar</button><button class="btn" id="salir">Salir</button></div>
       <div class="resumen">
         <div class="tarjeta"><div style="color:var(--suave);font-size:13px">Estudiantes</div><div class="num">${total.length}</div></div>
@@ -81,7 +91,14 @@
     $('#act').onchange = e => { filtro.act = e.target.value; pintar(); };
     $('#estado').onchange = e => { filtro.estado = e.target.value; pintar(); };
     $('#recargar').onclick = cargar;
-    $('#salir').onclick = async () => { await api('POST', '/api/docente/salir'); login(); };
+    $('#salir').onclick = () => { token = null; try { sessionStorage.removeItem('rec2:docente'); } catch (e) { } login(); };
+    $('#csv').onclick = async () => {
+      const r = await fetch(API + '/api/docente/notas.csv', { headers: { 'X-Docente': token } });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(await r.blob());
+      a.download = 'notas-recuperacion.csv';
+      a.click();
+    };
     app.querySelectorAll('th[data-col]').forEach(t => t.onclick = () => { orden = { col: t.dataset.col, asc: orden.col === t.dataset.col ? !orden.asc : true }; pintar(); });
     app.querySelectorAll('tr.fila').forEach(f => f.onclick = () => detalle(+f.dataset.id));
   }
