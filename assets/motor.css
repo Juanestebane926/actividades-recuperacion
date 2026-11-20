@@ -106,7 +106,7 @@ table.tabla th { background: var(--panel2); }
 .error-comp .donde { font-weight: 700; color: var(--mal); font-size: 14px; }
 .error-comp .es { font-size: 14px; margin: 2px 0; }
 .error-comp pre { margin: 4px 0 0; font-size: 12px; white-space: pre-wrap; color: var(--suave); }
-.preview { width: 100%; height: 300px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }
+.preview { width: 100%; height: 400px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }
 
 .navegacion { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--borde); display: flex; justify-content: space-between; padding: 10px 18px; gap: 10px; z-index: 9; }
 
