@@ -3,42 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%93%9D%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%233d5bd9%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z%27 /%3E%3Cpath d=%27M22 10v6%27 /%3E%3Cpath d=%27M6 12.5V16a6 3 0 0 0 12 0v-3.5%27 /%3E%3C/g%3E%3C/svg%3E">
+<script>(function(){var m=matchMedia("(prefers-color-scheme: dark)"),r=document.documentElement;function a(){r.classList.toggle("dark",m.matches)}a();m.addEventListener&&m.addEventListener("change",a)})()</script>
+<meta name="color-scheme" content="light dark">
 <title>Actividades de recuperación</title>
-<link rel="stylesheet" href="assets/motor.css?v=20">
-<style>
-  .cursos { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
-  .curso { display: block; text-decoration: none; color: inherit; transition: transform .1s; }
-  .curso:hover { transform: translateY(-2px); }
-  .curso .ico { font-size: 34px; }
-  .curso h2 { margin: 6px 0 4px; font-size: 20px; }
-  .curso p { color: var(--suave); margin: 0 0 10px; font-size: 14px; }
-</style>
+<link rel="stylesheet" href="assets/vendor/basecoat-1.1.0.min.css">
+<link rel="stylesheet" href="assets/motor.css?v=30">
+<script defer src="assets/iconos.js?v=30"></script>
 </head>
 <body>
-<div class="portada" style="max-width:980px">
-  <div class="tarjeta">
-    <h1>Actividades de recuperación</h1>
-    <p class="sub">Elige tu curso. No tienes que instalar nada: escribes el código aquí y el servidor del curso lo compila, lo ejecuta y lo prueba de verdad. Al final calificas y tu nota queda registrada para tu profesor.</p>
+<main class="portada">
+  <div class="cabecera">
+    <div class="marca"><span class="logo"><i data-icono="graduation-cap"></i></span><span class="txt">Actividades de recuperación<small>Programación</small></span></div>
+    <a class="btn" data-variant="ghost" data-size="sm" href="docente/"><i data-icono="chart-column"></i> Panel docente</a>
   </div>
+  <span class="eyebrow"><i data-icono="sparkles"></i> Elige tu curso para empezar</span>
+  <h1>Recupera tu materia paso a paso</h1>
+  <p class="sub">No tienes que instalar nada: escribes el código aquí y el servidor del curso lo compila, lo ejecuta y lo prueba de verdad. Al final calificas y tu nota queda registrada para tu profesor.</p>
+
   <div class="cursos">
-    <a class="tarjeta curso" href="spring-boot/">
-      <div class="ico">🌱</div><h2>Spring Boot</h2>
+    <a class="card curso" href="spring-boot/">
+      <span class="icono-curso"><i data-icono="leaf"></i></span>
+      <h2>Spring Boot</h2>
       <p>API REST de vacantes: controllers, @RequestParam, @PathVariable, @RequestBody, ResponseEntity y servicios.</p>
-      <span class="chip">⏱ 60–90 min</span>
+      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 6 pasos</span><span class="entrar">Empezar <i data-icono="arrow-right"></i></span></div>
     </a>
-    <a class="tarjeta curso" href="react/">
-      <div class="ico">⚛️</div><h2>React</h2>
+    <a class="card curso" href="react/">
+      <span class="icono-curso"><i data-icono="atom"></i></span>
+      <h2>React</h2>
       <p>Gestor de estudiantes: componentes, props, render condicional, listas, useState, formularios y useEffect.</p>
-      <span class="chip">⏱ 60–90 min</span>
+      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 6 pasos</span><span class="entrar">Empezar <i data-icono="arrow-right"></i></span></div>
     </a>
-    <a class="tarjeta curso" href="java-web/">
-      <div class="ico">☕</div><h2>Java Web</h2>
+    <a class="card curso" href="java-web/">
+      <span class="icono-curso"><i data-icono="coffee"></i></span>
+      <h2>Java Web</h2>
       <p>API de estudiantes con Servlets: condicionales, ciclos, clases, ArrayList, doGet y doPost con JSON.</p>
-      <span class="chip">⏱ 60–90 min</span>
+      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 7 pasos</span><span class="entrar">Empezar <i data-icono="arrow-right"></i></span></div>
     </a>
   </div>
-  <p style="text-align:center;color:var(--suave);font-size:14px;margin-top:24px">¿Eres docente? <a href="docente/">Panel de notas y avance</a>.</p>
-</div>
+</main>
 </body>
 </html>

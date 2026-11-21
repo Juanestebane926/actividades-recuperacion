@@ -7,7 +7,7 @@ window.ACTIVIDAD = {
   duracion: '60 a 90 minutos',
   motor: 'java',
   javaCurso: 'spring',
-  aviso: '⚙️ Tu código se ejecuta <b>de verdad</b> en el servidor del curso: se compila con <code>javac</code> (Java 17) y corre sobre <b>Spring Boot 3</b> real. <b>▶ Ejecutar</b> arranca tu aplicación con su Tomcat embebido y le envía las peticiones HTTP de la pestaña <code>peticiones.http</code> (como Thunder Client); puedes cambiarlas. <b>✔ Comprobar</b> corre pruebas JUnit 5 con MockMvc. Los errores que ves son los que dan Java y Spring de verdad.',
+  aviso: 'Tu código se ejecuta <b>de verdad</b> en el servidor del curso: se compila con <code>javac</code> (Java 17) y corre sobre <b>Spring Boot 3</b> real. <b>Ejecutar</b> arranca tu aplicación con su Tomcat embebido y le envía las peticiones HTTP de la pestaña <code>peticiones.http</code> (como Thunder Client); puedes cambiarlas. <b>Comprobar</b> corre pruebas JUnit 5 con MockMvc. Los errores que ves son los que dan Java y Spring de verdad.',
   archivos: {
     'HolaController.java': { ruta: 'codigo/HolaController.java' },
     'SaludoController.java': { ruta: 'codigo/SaludoController.java' },
@@ -52,7 +52,7 @@ public class SaludoController {
           <li>Marca el método <code>hola()</code> con <code>@GetMapping</code>.</li>
           <li>Haz que devuelva exactamente <code>"Hola desde Spring Boot"</code> (con comillas, es un String).</li>
         </ol>
-        <p>Luego pulsa <b>▶ Ejecutar</b>: tu aplicación arranca de verdad y verás la respuesta a <code>GET /api/hola</code>. Después pulsa <b>✔ Comprobar</b>.</p>`,
+        <p>Luego pulsa <b>Ejecutar</b>: tu aplicación arranca de verdad y verás la respuesta a <code>GET /api/hola</code>. Después pulsa <b>Comprobar</b>.</p>`,
       pistas: [
         'Las anotaciones se escriben con <code>@</code> y el nombre exacto, respetando mayúsculas: <code>@RestController</code>, <code>@GetMapping</code>.',
         'En <code>@RequestMapping("____")</code> el texto va entre las comillas que ya están: queda <code>@RequestMapping("/api")</code>.',
@@ -114,7 +114,7 @@ public String buscar(@RequestParam(defaultValue = "todos") String filtro) {
     }
 }
 return null;                      // la recorrí toda y no estaba</code></pre>
-        <p>⚠️ Como <code>id</code> es <code>Long</code> (un objeto), se compara con <code>.equals(...)</code>, no con <code>==</code>.</p>
+        <p><b>Ojo:</b> Como <code>id</code> es <code>Long</code> (un objeto), se compara con <code>.equals(...)</code>, no con <code>==</code>.</p>
         <p>Para agregar un elemento a una lista se usa <code>lista.add(elemento)</code>.</p>`,
       tarea: `<ol>
           <li>Marca la clase con <code>@Service</code>.</li>
@@ -197,7 +197,7 @@ Content-Type: application/json
 }
 Vacante creada = vacanteService.____(vacante);
 return ResponseEntity.status(HttpStatus.____).body(creada);</code></pre>
-        <p>Pruébalo con <b>▶ Ejecutar</b>: verás un POST válido (201) y uno con título vacío (400).</p>`,
+        <p>Pruébalo con <b>Ejecutar</b>: verás un POST válido (201) y uno con título vacío (400).</p>`,
       pistas: [
         'Para saber si un String quedó vacío: <code>.isEmpty()</code>.',
         'El método del service que guarda es <code>crear</code>: <code>vacanteService.crear(vacante)</code>.',
@@ -237,7 +237,7 @@ public ResponseEntity&lt;Void&gt; eliminar(@PathVariable Long id) {
           <li>Agrega el filtro opcional <code>empresa</code> a <code>listar()</code> del controller.</li>
           <li>Agrega el endpoint <code>DELETE /api/vacantes/{id}</code> (204 o 404).</li>
         </ol>
-        <p>Cuando este paso pase, ve a <b>🏁 Nota</b> para calificar toda la actividad.</p>`,
+        <p>Cuando este paso pase, ve a <b>Nota</b> para calificar toda la actividad.</p>`,
       pistas: [
         '<code>eliminar</code> en el service: <code>Vacante v = buscarPorId(id); if (v == null) { return false; } vacantes.remove(v); return true;</code>',
         'La firma de listar queda: <code>public List&lt;Vacante&gt; listar(@RequestParam(required = false) String empresa)</code>.',

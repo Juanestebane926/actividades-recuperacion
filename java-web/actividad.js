@@ -7,7 +7,7 @@ window.ACTIVIDAD = {
   duracion: '60 a 90 minutos',
   motor: 'java',
   javaCurso: 'web',
-  aviso: '⚙️ Tu código se ejecuta <b>de verdad</b> en el servidor del curso: se compila con <code>javac</code> (Java 17) y los servlets se despliegan en un <b>Tomcat 9</b> real (con <code>javax.servlet</code>, como en NetBeans). <b>▶ Ejecutar</b> corre un programa de prueba o, en los pasos del servlet, le envía a Tomcat las peticiones HTTP de la pestaña <code>peticiones.http</code> (puedes cambiarlas). <b>✔ Comprobar</b> corre pruebas JUnit 5. La base de datos MySQL se reemplaza por un <code>ArrayList</code>.',
+  aviso: 'Tu código se ejecuta <b>de verdad</b> en el servidor del curso: se compila con <code>javac</code> (Java 17) y los servlets se despliegan en un <b>Tomcat 9</b> real (con <code>javax.servlet</code>, como en NetBeans). <b>Ejecutar</b> corre un programa de prueba o, en los pasos del servlet, le envía a Tomcat las peticiones HTTP de la pestaña <code>peticiones.http</code> (puedes cambiarlas). <b>Comprobar</b> corre pruebas JUnit 5. La base de datos MySQL se reemplaza por un <code>ArrayList</code>.',
   archivos: {
     'Calificaciones.java': { ruta: 'codigo/Calificaciones.java' },
     'Estadisticas.java': { ruta: 'codigo/Estadisticas.java' },
@@ -242,7 +242,7 @@ try {
     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     out.print("{\\"mensaje\\":\\"Edad y nota deben ser numericas\\"}");
 }</code></pre>
-        <p>Con <b>▶ Ejecutar</b> Tomcat recibe las peticiones de <code>peticiones.http</code> (varios POST de prueba) y verás sus respuestas reales. Puedes agregar las tuyas.</p>`,
+        <p>Con <b>Ejecutar</b> Tomcat recibe las peticiones de <code>peticiones.http</code> (varios POST de prueba) y verás sus respuestas reales. Puedes agregar las tuyas.</p>`,
       pistas: [
         'Los métodos para convertir son <code>Integer.parseInt</code> y <code>Double.parseDouble</code>.',
         'Para guardar: <code>dao.agregar(nuevo);</code>',
@@ -285,7 +285,7 @@ if (buscado != null) {
           <li>Agrega la búsqueda por nombre (200 con el estudiante o 404).</li>
           <li>Importa <code>Estadisticas</code> y agrega el campo <code>"promedio"</code> a la lista.</li>
         </ol>
-        <p>Cuando pase, ve a <b>🏁 Nota</b> para calificar toda la actividad.</p>`,
+        <p>Cuando pase, ve a <b>Nota</b> para calificar toda la actividad.</p>`,
       pistas: [
         'El bloque de búsqueda va al inicio de <code>doGet</code>, después de <code>setContentType</code>.',
         'Si sale “cannot find symbol Estadisticas”, te falta el <code>import</code>.',

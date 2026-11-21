@@ -11,6 +11,10 @@
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const HTTP = 'peticiones.http';
   const API = (window.API_URL || '').replace(/\/$/, '');
+  const I = (n, c) => (window.Icono ? window.Icono(n, c) : '');
+  const ICONO_CURSO = { 'spring-boot': 'leaf', react: 'atom', 'java-web': 'coffee' }[A.id] || 'book-open';
+  /** Los mensajes del servidor traen un emoji antes de la pista: se muestra como texto. */
+  const limpiar = t => String(t == null ? '' : t).replace(/\u{1F4A1}\s*/gu, 'Pista: ');
   let app = null;
 
   let token = null, estudiante = null, estado = null, entregas = [];
@@ -43,7 +47,8 @@
   function marcarGuardado(texto, error) {
     const g = $('#guardado');
     if (!g) return;
-    g.textContent = texto;
+    const icono = error ? 'cloud-off' : /^Guardado/.test(texto) ? 'cloud-check' : 'circle-dashed';
+    g.innerHTML = I(icono) + '<span>' + esc(texto) + '</span>';
     g.classList.toggle('error', !!error);
   }
 
@@ -62,10 +67,10 @@
     cambios = {};
     try {
       await api('PUT', '/api/progreso', enviar);
-      marcarGuardado('✓ Guardado');
+      marcarGuardado('Guardado');
     } catch (e) {
       cambios = Object.assign({}, enviados, cambios);
-      marcarGuardado(e.status === 401 ? 'Sesión vencida' : '⚠ Sin conexión: reintentando…', true);
+      marcarGuardado(e.status === 401 ? 'Sesión vencida' : 'Sin conexión, reintentando…', true);
       if (e.status !== 401) setTimeout(() => guardar(true), 5000);
     } finally {
       guardando = false;
@@ -78,7 +83,7 @@
   // ------------------------------------------------------------------ arranque
   async function iniciar() {
     app = document.getElementById('app');
-    app.innerHTML = '<div class="portada"><div class="tarjeta"><div class="estado-carga"><span class="girando"></span> Cargando actividad…</div></div></div>';
+    app.innerHTML = '<div class="portada angosta"><div class="estado-carga"><span class="girando"></span> Cargando actividad…</div></div>';
     await Promise.all(Object.keys(A.archivos).map(async n => {
       const r = await fetch(A.archivos[n].ruta, { cache: 'no-cache' });
       originales[n] = (await r.text()).replace(/\r\n/g, '\n');
@@ -108,40 +113,50 @@
   }
 
   function portada(error) {
-    const temas = A.temas.map(t => '<span class="chip">' + esc(t) + '</span>').join('');
+    const temas = A.temas.map(t => '<span class="badge" data-variant="outline">' + esc(t) + '</span>').join('');
     app.innerHTML = `
       <div class="portada">
-        <div class="tarjeta">
-          <div style="color:var(--primario);font-weight:700">Actividad de recuperación · ${esc(A.curso)}</div>
-          <h1>${esc(A.titulo)}</h1>
-          <p class="sub">${A.descripcion}</p>
-          <div class="chips">${temas}</div>
-          <div class="chips"><span class="chip">⏱ ${esc(A.duracion)}</span><span class="chip">🧩 ${A.pasos.length} pasos + nota</span><span class="chip">💻 Nada que instalar</span></div>
+        <div class="cabecera">
+          <a class="marca" href="../"><span class="logo">${I(ICONO_CURSO)}</span><span class="txt">${esc(A.curso)}<small>Actividades de recuperación</small></span></a>
+          <a class="btn" data-variant="ghost" data-size="sm" href="../">${I('arrow-left')} Todas las actividades</a>
         </div>
-        <div class="tarjeta">
-          <h3 style="margin-top:0">¿Cómo funciona?</h3>
-          <ol>
-            <li>Cada paso trae una <b>explicación</b> y un <b>código para completar</b>. Los espacios <code>____</code> son los que debes llenar.</li>
-            <li><b>▶ Ejecutar</b> corre tu código de verdad y te muestra lo que hace. <b>✔ Comprobar</b> corre las pruebas automáticas y te dice qué falla, con los mensajes reales del compilador y del framework.</li>
-            <li>Si te atascas, abre las <b>pistas</b>. Puedes intentar cuantas veces quieras.</li>
-            <li>Al final, en <b>🏁 Nota</b>, se califica todo tu código y la nota <b>queda registrada para tu profesor</b> automáticamente.</li>
-          </ol>
-          ${A.aviso ? '<div class="nota-info">' + A.aviso + '</div>' : ''}
-        </div>
-        <div class="tarjeta">
-          <h3 style="margin-top:0">Entrar</h3>
-          <p style="color:var(--suave);font-size:14px;margin-top:0">La primera vez escribe tus datos y <b>elige un PIN</b> de 4 a 8 números. Tu avance se guarda en el servidor: para continuar después (en este u otro computador) escribe el <b>mismo documento y PIN</b>.</p>
-          <form id="form-entrar">
-            <div class="fila">
-              <div class="campo"><label for="doc">Documento o código de estudiante</label><input id="doc" autocomplete="username" placeholder="Ej: 1012345678" required></div>
-              <div class="campo"><label for="pin">PIN (4 a 8 números)</label><input id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Ej: 2580" required></div>
+        <span class="eyebrow">${I('graduation-cap')} Actividad de recuperación · ${esc(A.curso)}</span>
+        <h1>${esc(A.titulo)}</h1>
+        <p class="sub">${A.descripcion}</p>
+        <div class="meta"><span>${I('clock')} ${esc(A.duracion)}</span><span>${I('list-checks')} ${A.pasos.length} pasos y la nota final</span><span>${I('monitor')} Nada que instalar</span></div>
+        <div class="temas">${temas}</div>
+        <div class="portada-grid">
+          <div>
+            <div class="card">
+              <header><h2>Cómo funciona</h2></header>
+              <section>
+                <ol class="pasos-como">
+                  <li><div>Cada paso trae una <b>explicación</b> y un <b>código para completar</b>. Los espacios <code>____</code> son los que debes llenar.</div></li>
+                  <li><div><b>Ejecutar</b> corre tu código de verdad y te muestra lo que hace. <b>Comprobar</b> corre las pruebas automáticas y te dice qué falla, con los mensajes reales del compilador y del framework.</div></li>
+                  <li><div>Si te atascas, abre las <b>pistas</b>. Puedes intentarlo cuantas veces quieras.</div></li>
+                  <li><div>Al final, en <b>Nota</b>, se califica todo tu código y la nota <b>queda registrada para tu profesor</b> automáticamente.</div></li>
+                </ol>
+              </section>
+              ${A.aviso ? '<footer><div class="nota-info">' + A.aviso + '</div></footer>' : ''}
             </div>
-            <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Ej: Ana María Pérez"><small>Solo se pide la primera vez.</small></div>
-            <div class="acciones"><button class="btn primario grande" id="empezar" type="submit">Entrar a la actividad →</button></div>
-          </form>
-          <p id="error-datos" class="aviso mal ${error ? '' : 'oculto'}">${esc(error || '')}</p>
+          </div>
+          <div>
+            <div class="card">
+              <header><h2>Entrar a la actividad</h2><p>La primera vez escribe tus datos y <b>elige un PIN</b> de 4 a 8 números. Para continuar después, en este u otro computador, usa el <b>mismo documento y PIN</b>.</p></header>
+              <section>
+                <form id="form-entrar" class="form">
+                  <div class="fila">
+                    <div class="field"><label for="doc">Documento</label><input class="input" id="doc" autocomplete="username" placeholder="1012345678" required></div>
+                    <div class="field"><label for="pin">PIN</label><input class="input" id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="4 a 8 números" required></div>
+                  </div>
+                  <div class="field"><label for="nombre">Nombre completo</label><input class="input" id="nombre" autocomplete="name" placeholder="Ana María Pérez"><small>Solo se pide la primera vez.</small></div>
+                  <div id="error-datos" class="aviso mal ${error ? '' : 'oculto'}">${I('circle-x')}<div>${esc(error || '')}</div></div>
+                  <button class="btn" id="empezar" type="submit" style="width:100%">Entrar ${I('arrow-right')}</button>
+                </form>
+              </section>
+            </div>
+          </div>
         </div>
-        <p style="text-align:center;color:var(--suave);font-size:13px"><a href="../">← Todas las actividades</a></p>
       </div>`;
     $('#form-entrar').onsubmit = async ev => {
       ev.preventDefault();
@@ -154,7 +169,7 @@
         try { localStorage.setItem(CLAVE_TOKEN, token); } catch (x) { }
         entrar(d);
       } catch (x) {
-        e.textContent = x.message;
+        e.querySelector('div').textContent = x.message;
         e.classList.remove('oculto');
       } finally {
         b.disabled = false;
@@ -173,13 +188,16 @@
   function mostrarTrabajo() {
     app.innerHTML = `
       <header class="barra">
-        <div class="marca">${esc(A.curso)}<small>Recuperación</small></div>
+        <div class="marca"><span class="logo">${I(ICONO_CURSO)}</span><span class="txt">${esc(A.curso)}<small>Recuperación</small></span></div>
         <nav class="navpasos" aria-label="Pasos">
-          <button class="flecha" id="anterior" title="Paso anterior (Alt + ←)">‹ Anterior</button>
+          <button class="btn" data-variant="outline" data-size="sm" id="anterior" title="Paso anterior (Alt + flecha izquierda)">${I('chevron-left')} Anterior</button>
           <div class="progreso" id="progreso"></div>
-          <button class="flecha primaria" id="siguiente" title="Paso siguiente (Alt + →)">Siguiente ›</button>
+          <button class="btn" data-size="sm" id="siguiente" title="Paso siguiente (Alt + flecha derecha)">Siguiente ${I('chevron-right')}</button>
         </nav>
-        <div class="estudiante">${esc(estudiante.nombre)} · ${esc(estudiante.doc)}<br><span class="guardado" id="guardado">✓ Guardado</span> · <button id="salir" title="Cerrar sesión en este computador">Salir</button></div>
+        <div class="estudiante">
+          <div class="quien"><div class="nombre" title="${esc(estudiante.nombre)} · ${esc(estudiante.doc)}">${esc(estudiante.nombre)}</div><span class="guardado" id="guardado">${I('cloud-check')}<span>Guardado</span></span></div>
+          <button class="btn" data-variant="ghost" data-size="icon-sm" id="salir" title="Salir (cerrar sesión en este computador)" aria-label="Salir">${I('log-out')}</button>
+        </div>
       </header>
       <main id="vista"></main>`;
     $('#anterior').onclick = () => irA(estado.paso - 1);
@@ -200,9 +218,9 @@
       const r = estado.res[paso.id];
       const completo = r && r.total && r.ok === r.total;
       const cls = [i === estado.paso ? 'actual' : '', r ? (completo ? 'hecho' : 'fallo') : ''].join(' ');
-      h += `<button class="${cls}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}${r ? ' (' + r.ok + '/' + r.total + ')' : ''}">${completo ? '✓' : i + 1}</button>`;
+      h += `<button class="${cls}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}${r ? ' (' + r.ok + '/' + r.total + ')' : ''}">${completo ? I('check') : i + 1}</button>`;
     });
-    h += `<button class="nota ${estado.paso === A.pasos.length ? 'actual' : ''} ${entregas.length ? 'hecho' : ''}" data-i="${A.pasos.length}" title="Calificar y ver la nota">🏁 Nota</button>`;
+    h += `<button class="nota ${estado.paso === A.pasos.length ? 'actual' : ''} ${entregas.length ? 'hecho' : ''}" data-i="${A.pasos.length}" title="Calificar y ver la nota">${I('flag')} Nota</button>`;
     p.innerHTML = h;
     p.querySelectorAll('button').forEach(b => b.onclick = () => irA(+b.dataset.i));
     $('#anterior').disabled = estado.paso === 0;
@@ -227,15 +245,16 @@
   function vistaPaso(paso, i) {
     pasoActual = paso;
     const pistasVistas = estado.pistas[paso.id] || 0;
-    const pistas = (paso.pistas || []).map((p, k) => `<details ${k < pistasVistas ? 'open' : ''} data-k="${k}"><summary>Pista ${k + 1}</summary><div>${p}</div></details>`).join('');
+    const pistas = (paso.pistas || []).map((p, k) => `<details ${k < pistasVistas ? 'open' : ''} data-k="${k}"><summary>${I('chevron-right')}Pista ${k + 1}</summary><div>${p}</div></details>`).join('');
+    const avance = Math.round((i + 1) / A.pasos.length * 100);
     $('#vista').innerHTML = `
       <div class="trabajo">
-        <section class="explicacion">
-          <div class="num">Paso ${i + 1} de ${A.pasos.length}</div>
+        <section class="panel explicacion prosa">
+          <div class="num">Paso ${i + 1} de ${A.pasos.length}<span class="barrita"><i style="width:${avance}%"></i></span></div>
           <h2>${esc(paso.titulo)}</h2>
           ${paso.explicacion}
-          <div class="tarea"><h3>🎯 Tu tarea</h3>${paso.tarea}</div>
-          ${pistas ? '<h3>¿Te atascaste?</h3><div class="pistas">' + pistas + '</div>' : ''}
+          <div class="tarea"><h3>${I('target')} Tu tarea</h3>${paso.tarea}</div>
+          ${pistas ? '<h3 class="titulo-pistas">' + I('lightbulb') + ' ¿Te atascaste?</h3><div class="pistas">' + pistas + '</div>' : ''}
         </section>
         <section class="editor-col" id="editor-col">
           <div class="editor-caja">
@@ -244,15 +263,16 @@
             <div class="peticiones oculto" id="peticiones"></div>
           </div>
           <div class="acciones">
-            <button class="btn" id="ejecutar" title="Corre tu código de verdad y muestra lo que hace">▶ Ejecutar</button>
-            <button class="btn primario" id="comprobar" title="Corre las pruebas automáticas (Ctrl + Enter)">✔ Comprobar</button>
+            <button class="btn" data-variant="outline" id="ejecutar" title="Corre tu código de verdad y muestra lo que hace">${I('play')} Ejecutar</button>
+            <button class="btn" id="comprobar" title="Corre las pruebas automáticas (Ctrl + Enter)">${I('circle-check')} Comprobar</button>
+            <span class="atajo"><kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">Enter</kbd></span>
             <span class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></span>
             <span class="espacio"></span>
-            <button class="btn chico" id="reiniciar" title="Vuelve este archivo a su versión inicial">↺ Reiniciar archivo</button>
+            <button class="btn" data-variant="ghost" data-size="sm" id="reiniciar" title="Vuelve este archivo a su versión inicial">${I('rotate-ccw')}<span>Reiniciar archivo</span></button>
           </div>
-          <div class="salida">
-            <div class="cab"><span id="salida-titulo">Resultado</span><button class="btn chico" id="agrandar" title="Agrandar o achicar el panel de resultados">⤢ Agrandar</button></div>
-            <div class="cuerpo" id="salida"><p class="vacio">Pulsa <b>▶ Ejecutar</b> para ver qué hace tu código o <b>✔ Comprobar</b> para revisarlo.</p></div>
+          <div class="panel salida">
+            <div class="cab"><span>${I('terminal')}<span id="salida-titulo">Resultado</span></span><button class="btn" data-variant="ghost" data-size="sm" id="agrandar" title="Agrandar o achicar el panel de resultados">${I('maximize-2')}<span>Agrandar</span></button></div>
+            <div class="cuerpo" id="salida"><p class="vacio">Pulsa <b>Ejecutar</b> para ver qué hace tu código o <b>Comprobar</b> para revisarlo.</p></div>
           </div>
         </section>
       </div>`;
@@ -265,7 +285,8 @@
     $('#agrandar').onclick = () => {
       const c = $('#editor-col');
       c.classList.toggle('salida-grande');
-      $('#agrandar').textContent = c.classList.contains('salida-grande') ? '⤡ Achicar' : '⤢ Agrandar';
+      const grande = c.classList.contains('salida-grande');
+      $('#agrandar').innerHTML = grande ? I('minimize-2') + '<span>Achicar</span>' : I('maximize-2') + '<span>Agrandar</span>';
       setTimeout(() => editor.refresh(), 30);
     };
     $('#reiniciar').onclick = () => reiniciarArchivo(paso);
@@ -276,17 +297,25 @@
     if (archivoActual !== HTTP && A.archivos[archivoActual].soloLectura) return;
     if (b.dataset.confirmar !== '1') {
       b.dataset.confirmar = '1';
-      b.textContent = '¿Seguro? Pulsa otra vez';
-      setTimeout(() => { b.dataset.confirmar = ''; b.textContent = '↺ Reiniciar archivo'; }, 3500);
+      b.dataset.variant = 'destructive';
+      b.innerHTML = I('triangle-alert') + '<span>¿Seguro? Pulsa otra vez</span>';
+      setTimeout(() => { b.dataset.confirmar = ''; textoReiniciar(); }, 3500);
       return;
     }
     b.dataset.confirmar = '';
-    b.textContent = '↺ Reiniciar archivo';
+    textoReiniciar();
     if (archivoActual === HTTP) { delete estado.peticiones[paso.id]; pintarPeticiones(paso); guardar(); return; }
     estado.archivos[archivoActual] = originales[archivoActual];
     cambios[archivoActual] = originales[archivoActual];
     editor.setValue(originales[archivoActual]);
     guardar();
+  }
+
+  function textoReiniciar() {
+    const b = $('#reiniciar');
+    if (!b) return;
+    b.dataset.variant = 'ghost';
+    b.innerHTML = I('rotate-ccw') + '<span>' + (archivoActual === HTTP ? 'Restaurar ejemplos' : 'Reiniciar archivo') + '</span>';
   }
 
   let marcaError = null;
@@ -323,7 +352,7 @@
       $('#editor').classList.toggle('oculto', esHttp);
       $('#peticiones').classList.toggle('oculto', !esHttp);
       tabs.querySelectorAll('button').forEach(b => b.classList.toggle('activa', b.dataset.n === n));
-      $('#reiniciar').textContent = esHttp ? '↺ Restaurar ejemplos' : '↺ Reiniciar archivo';
+      textoReiniciar();
       if (esHttp) { pintarPeticiones(paso); return; }
       editor.setOption('readOnly', !!A.archivos[n].soloLectura);
       editor.setValue(estado.archivos[n]);
@@ -335,8 +364,8 @@
     };
     if (window.Sugerencias) Sugerencias.activar(editor, { A, archivos: () => estado.archivos, actual: () => archivoActual });
     const nombres = paso.archivos.slice();
-    let h = nombres.map(n => `<button data-n="${esc(n)}">${esc(n)}${A.archivos[n].soloLectura ? ' <span class="candado" title="Solo lectura">🔒</span>' : ''}</button>`).join('');
-    if (tienePeticiones(paso)) h += `<button data-n="${HTTP}" class="http" title="Prueba tu API como en Thunder Client">🌐 Probar la API</button>`;
+    let h = nombres.map(n => `<button data-n="${esc(n)}"${A.archivos[n].soloLectura ? ' title="Solo lectura: no hace falta cambiarlo"' : ''}>${I('file-code')}${esc(n)}${A.archivos[n].soloLectura ? I('lock', 'candado') : ''}</button>`).join('');
+    if (tienePeticiones(paso)) h += `<span class="separa"></span><button data-n="${HTTP}" class="http" title="Prueba tu API como en Thunder Client">${I('globe')} Probar la API</button>`;
     tabs.innerHTML = h;
     tabs.querySelectorAll('button').forEach(b => b.onclick = () => abrir(b.dataset.n));
     abrir(nombres.find(n => !A.archivos[n].soloLectura) || nombres[0]);
@@ -367,16 +396,16 @@
     const guardarFilas = () => { estado.peticiones[paso.id] = textoPeticiones(filas); guardar(); };
     const pintar = () => {
       cont.innerHTML = `
-        <p class="ayuda-api">Aquí pruebas tu API como en <b>Thunder Client</b>. Con <b>▶ Enviar todas</b> tu aplicación arranca de verdad y recibe estas peticiones <b>en orden</b> (lo que crea un POST lo ve el GET de después). Con el ▶ de una fila envías solo esa.</p>
+        <p class="ayuda-api">Aquí pruebas tu API como en <b>Thunder Client</b>. Con <b>Enviar todas</b> tu aplicación arranca de verdad y recibe estas peticiones <b>en orden</b> (lo que crea un POST lo ve el GET de después). Con el botón de enviar de una fila mandas solo esa.</p>
         ${filas.map((f, i) => `
           <div class="pet" data-i="${i}">
-            <select class="pet-metodo m-${f.metodo}">${METODOS.map(m => `<option ${m === f.metodo ? 'selected' : ''}>${m}</option>`).join('')}</select>
-            <input class="pet-ruta" value="${esc(f.ruta)}" placeholder="/api/ruta?param=valor" spellcheck="false">
-            <button class="btn chico pet-enviar" title="Enviar solo esta petición">▶</button>
-            <button class="btn chico pet-quitar" title="Quitar">✕</button>
-            ${f.metodo === 'POST' || f.metodo === 'PUT' ? `<textarea class="pet-cuerpo" rows="2" spellcheck="false" placeholder="Cuerpo, por ejemplo: ${esc(ejemploCuerpo)}">${esc(f.cuerpo)}</textarea>` : ''}
+            <select class="select pet-metodo m-${f.metodo}" aria-label="Método">${METODOS.map(m => `<option ${m === f.metodo ? 'selected' : ''}>${m}</option>`).join('')}</select>
+            <input class="input pet-ruta" value="${esc(f.ruta)}" placeholder="/api/ruta?param=valor" spellcheck="false" aria-label="Ruta">
+            <button class="btn pet-enviar" data-variant="outline" data-size="icon-sm" title="Enviar solo esta petición" aria-label="Enviar">${I('send')}</button>
+            <button class="btn pet-quitar" data-variant="ghost" data-size="icon-sm" title="Quitar" aria-label="Quitar">${I('x')}</button>
+            ${f.metodo === 'POST' || f.metodo === 'PUT' ? `<textarea class="textarea pet-cuerpo" rows="2" spellcheck="false" placeholder="Cuerpo, por ejemplo: ${esc(ejemploCuerpo)}">${esc(f.cuerpo)}</textarea>` : ''}
           </div>`).join('')}
-        <div class="acciones"><button class="btn chico" id="pet-agregar">＋ Agregar petición</button><span class="espacio"></span><button class="btn primario chico" id="pet-todas">▶ Enviar todas</button></div>`;
+        <div class="acciones"><button class="btn" data-variant="outline" data-size="sm" id="pet-agregar">${I('plus')} Agregar petición</button><span class="espacio"></span><button class="btn" data-size="sm" id="pet-todas">${I('play')} Enviar todas</button></div>`;
       cont.querySelectorAll('.pet').forEach(d => {
         const i = +d.dataset.i;
         d.querySelector('.pet-metodo').onchange = e => { filas[i].metodo = e.target.value; guardarFilas(); pintar(); };
@@ -431,7 +460,7 @@
       const cuerpo = { paso: paso.id, modo, archivos };
       if (modo === 'ejecutar' && tienePeticiones(paso)) cuerpo.peticiones = soloPeticiones || (estado.peticiones[paso.id] ?? paso.ejecutar.peticiones);
       const res = await api('POST', '/api/evaluar', cuerpo);
-      marcarGuardado('✓ Guardado');
+      marcarGuardado('Guardado');
       if (res.progreso) { estado.res = res.progreso; pintarProgreso(); }
       if (pasoActual === paso) pintarResultado(res, modo);
     } catch (e) {
@@ -486,17 +515,22 @@
   }
 
   function htmlErrores(errores) {
-    let h = `<div class="aviso mal">❌ Tu código no compila, así que todavía no se puede ejecutar. Corrige el primer error y vuelve a intentar.</div>`;
+    let h = aviso('mal', 'circle-x', 'Tu código no compila, así que todavía no se puede ejecutar. Corrige el primer error y vuelve a intentar.');
     h += errores.slice(0, 6).map(e => {
       const es = traducir(e.mensaje);
       const caret = e.codigo && e.columna ? '\n' + ' '.repeat(Math.max(0, e.columna - 1)) + '^' : '';
       return `<div class="error-comp"><div class="donde">${enlace(e.archivo, e.linea)}</div>
-        <div class="real">${esc(e.mensaje)}</div>
+        <div class="real">${esc(limpiar(e.mensaje))}</div>
         ${e.codigo ? '<pre>' + esc(e.codigo + caret) + '</pre>' : ''}
-        ${es ? '<div class="es">💡 ' + esc(es) + '</div>' : ''}</div>`;
+        ${es ? '<div class="es">' + I('lightbulb') + '<span>' + esc(es) + '</span></div>' : ''}</div>`;
     }).join('');
     if (errores.length > 6) h += `<p class="vacio">… y ${errores.length - 6} errores más (muchas veces se arreglan solos al corregir el primero).</p>`;
     return h;
+  }
+
+  /** Aviso con icono. `html` ya viene escapado o es HTML propio. */
+  function aviso(tipo, icono, html, estilo) {
+    return `<div class="aviso ${tipo}"${estilo ? ' style="' + estilo + '"' : ''}>${I(icono)}<div>${html}</div></div>`;
   }
 
   function formatoCuerpo(c) {
@@ -506,7 +540,8 @@
   }
 
   function htmlHttp(x) {
-    let h = `<div class="arranque ${/no pudo|FAILED|no pudo arrancar|no pudo desplegar/i.test(x.arranque || '') ? 'mal' : ''}">${esc(x.arranque || '')}</div>`;
+    const fallo = /no pudo|FAILED|no pudo arrancar|no pudo desplegar/i.test(x.arranque || '');
+    let h = `<div class="arranque ${fallo ? 'mal' : ''}">${fallo ? '' : I('circle-check')}<span>${esc(x.arranque || '')}</span></div>`;
     for (const r of x.respuestas || []) {
       const st = r.status ? String(r.status)[0] : '0';
       h += `<div class="http-resp"><div class="linea"><span class="metodo">${esc(r.metodo)}</span><span>${esc(r.ruta)}</span>
@@ -514,7 +549,7 @@
       if (r.enviado) h += `<pre class="enviado">Enviado: ${esc(r.enviado)}</pre>`;
       if (r.error) h += `<div class="exc">${esc(r.error)}</div>`;
       else h += `<pre>${r.cuerpo ? esc(formatoCuerpo(r.cuerpo)) : '<span class="enviado">(sin cuerpo)</span>'}</pre>`;
-      if (r.excepcion) h += `<div class="exc">Tu código lanzó: ${esc(r.excepcion)}</div>`;
+      if (r.excepcion) h += `<div class="exc">Tu código lanzó: ${esc(limpiar(r.excepcion))}</div>`;
       h += '</div>';
     }
     return h;
@@ -527,36 +562,36 @@
     let h = '';
     let preview = null;
     if (res.errorInterno) {
-      h = `<div class="aviso mal">No se pudo evaluar: ${esc(res.errorInterno)}</div><p class="vacio">Tu código está guardado. Vuelve a intentarlo en un momento.</p>`;
+      h = aviso('mal', 'cloud-off', 'No se pudo evaluar: ' + esc(res.errorInterno)) + '<p class="vacio">Tu código está guardado. Vuelve a intentarlo en un momento.</p>';
     } else if (res.blancos) {
       const lista = res.blancos.map(b => `<li>${enlace(b.archivo, b.linea)}</li>`).join('');
-      h = `<div class="aviso info">✏️ Aún tienes espacios <code>____</code> por completar. Reemplaza cada <code>____</code> por el código correcto:</div><ul>${lista}</ul>`;
+      h = aviso('info', 'pencil-line', 'Aún tienes espacios <code>____</code> por completar. Reemplaza cada <code>____</code> por el código correcto:') + `<ul>${lista}</ul>`;
     } else if (res.tiempoAgotado) {
-      h = `<div class="aviso mal">⏱ ${esc(res.mensaje)}</div>`;
+      h = aviso('mal', 'clock', esc(res.mensaje));
     } else if (res.peticionesInvalidas) {
-      h = `<div class="aviso mal">Revisa la pestaña <b>${HTTP}</b>: no entendí estas líneas.</div><pre class="consola">${esc(res.peticionesInvalidas.join('\n'))}</pre>
+      h = aviso('mal', 'triangle-alert', `Revisa la pestaña <b>Probar la API</b>: no entendí estas líneas.`) + `<pre class="consola">${esc(res.peticionesInvalidas.join('\n'))}</pre>
         <p class="vacio">Formato: <code>GET /api/ruta</code> o <code>POST /api/ruta {"campo": "valor"}</code>, una por línea.</p>`;
     } else if (res.errores && res.errores.length) {
       h = res.errores.some(e => e.seguridad)
-        ? `<div class="aviso mal">⛔ ${esc(res.errores[0].mensaje)}</div><div class="error-comp"><div class="donde">${enlace(res.errores[0].archivo, res.errores[0].linea)}</div><pre>${esc(res.errores[0].codigo || '')}</pre></div>`
+        ? aviso('mal', 'ban', esc(res.errores[0].mensaje)) + `<div class="error-comp"><div class="donde">${enlace(res.errores[0].archivo, res.errores[0].linea)}</div><pre>${esc(res.errores[0].codigo || '')}</pre></div>`
         : htmlErrores(res.errores);
     } else if (modo === 'comprobar') {
       const rs = res.pruebas || [];
       const ok = rs.filter(r => r.ok).length;
       h += ok === rs.length && rs.length
-        ? `<div class="aviso ok">🎉 ¡Muy bien! Pasaste las ${rs.length} pruebas de este paso.${estado.paso < A.pasos.length - 1 ? ' Sigue al siguiente con <b>Siguiente ›</b>.' : ' Ve a <b>🏁 Nota</b> para calificar.'}</div>`
-        : `<div class="aviso mal">Vas ${ok} de ${rs.length}. Lee el mensaje de la primera prueba que falla, corrige y vuelve a comprobar.</div>`;
-      h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? '✔' : '✘'}</span><div><div class="nombre">${esc(r.nombre)}</div>
-        ${r.ok ? '' : '<pre class="msg">' + esc(r.mensaje || '') + '</pre>'}
+        ? aviso('ok', 'trophy', `¡Muy bien! Pasaste las ${rs.length} pruebas de este paso.${estado.paso < A.pasos.length - 1 ? ' Continúa con <b>Siguiente</b>.' : ' Ve a <b>Nota</b> para calificar.'}`)
+        : aviso('mal', 'circle-x', `Vas <b>${ok} de ${rs.length}</b>. Lee el mensaje de la primera prueba que falla, corrige y vuelve a comprobar.`);
+      h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? I('circle-check') : I('circle-x')}</span><div><div class="nombre">${esc(r.nombre)}</div>
+        ${r.ok ? '' : '<pre class="msg">' + esc(limpiar(r.mensaje || '')) + '</pre>'}
         ${r.salida ? '<details class="plegable"><summary>Lo que imprimió tu código en esta prueba</summary><pre class="consola">' + esc(r.salida) + '</pre></details>' : ''}</div></div>`).join('');
-      if (res.ms) h += `<p class="vacio" style="font-size:12px">Evaluado en el servidor en ${(res.ms / 1000).toFixed(1)} s.</p>`;
+      if (res.ms) h += `<p class="vacio pie-resultado">Evaluado en el servidor en ${(res.ms / 1000).toFixed(1)} s.</p>`;
     } else {
-      // ▶ Ejecutar
+      // Ejecutar
       if (res.js != null) {
         preview = vistaPrevia(res.js);
-        h += '<div style="font-weight:600;font-size:14px;margin:0 0 4px">Tu app funcionando (puedes usarla):</div>';
+        h += '<div class="etiqueta" style="margin-top:0">Tu app funcionando (puedes usarla):</div>';
       } else if (res.http) {
-        h += `<p class="vacio" style="margin-top:0">Estas peticiones se enviaron a tu app. Cámbialas o agrega otras en la pestaña <a href="#" id="ir-api">🌐 Probar la API</a>.</p>`;
+        h += `<p class="vacio" style="margin:0 0 8px">Estas peticiones se enviaron a tu app. Cámbialas o agrega otras en la pestaña <a href="#" id="ir-api">Probar la API</a>.</p>`;
         h += htmlHttp(res.http);
         if (res.consola && res.consola.trim()) {
           const fallo = /FAILED|Exception/.test(res.http.arranque || '');
@@ -565,10 +600,10 @@
       } else {
         if (res.programa) h += `<details class="plegable"><summary>Programa de prueba que se ejecutó (usa tus clases)</summary><pre class="consola">${esc(res.programa)}</pre></details>`;
         h += res.consola && res.consola.trim()
-          ? `<div style="font-weight:600;font-size:14px">Salida (System.out):</div><pre class="consola">${esc(res.consola)}</pre>`
+          ? `<div class="etiqueta">Salida (System.out):</div><pre class="consola">${esc(res.consola)}</pre>`
           : '<p class="vacio">El programa no imprimió nada.</p>';
       }
-      if (res.excepcion) h += `<div class="aviso mal" style="white-space:pre-wrap;font-family:var(--mono);font-size:12.5px">${esc(res.excepcion)}</div>`;
+      if (res.excepcion) h += aviso('mal', 'triangle-alert', esc(limpiar(res.excepcion)), 'white-space:pre-wrap;font-family:var(--mono);font-size:12.5px');
     }
     s.innerHTML = h;
     if (preview) s.appendChild(preview);
@@ -592,19 +627,19 @@
     f.className = 'preview';
     f.setAttribute('sandbox', 'allow-scripts allow-modals');
     f.title = 'Vista previa';
-    const css = `body{font:15px/1.5 system-ui,sans-serif;margin:12px;color:#1d2333;background:#fff}
-      .badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;margin-left:6px}
-      .badge-ok{background:#d3f9d8;color:#2b8a3e}.badge-mal{background:#ffe3e3;color:#c92a2a}
-      ul{padding-left:20px} li{margin:4px 0} button{font:inherit;padding:5px 12px;border-radius:6px;border:1px solid #bbb;background:#f3f4f8;cursor:pointer}
-      input{font:inherit;padding:5px 8px;margin:0 6px 6px 0;border:1px solid #bbb;border-radius:6px} .error{color:#c92a2a} .vacio{color:#777}
-      #consola{font:12px monospace;background:#263238;color:#e0e6ea;padding:6px 8px;border-radius:6px;white-space:pre-wrap;margin-top:10px}
-      #consola:empty{display:none} .falla{color:#c92a2a;font:13px monospace;white-space:pre-wrap;background:#fff0f0;padding:8px;border-radius:6px}`;
+    const css = `body{font:14.5px/1.5 "Segoe UI",system-ui,sans-serif;margin:14px;color:#18181b;background:#fff}
+      h1,h2,h3{line-height:1.25;margin:0 0 8px} .badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600;margin-left:6px}
+      .badge-ok{background:#dcfce7;color:#15803d}.badge-mal{background:#fee2e2;color:#c81e1e}
+      ul{padding-left:20px} li{margin:4px 0} button{font:inherit;font-weight:500;padding:6px 12px;border-radius:7px;border:1px solid #d4d4d8;background:#fafafa;cursor:pointer}
+      button:hover{background:#f4f4f5} input{font:inherit;padding:6px 9px;margin:0 6px 6px 0;border:1px solid #d4d4d8;border-radius:7px} .error{color:#c81e1e} .vacio{color:#71717a}
+      #consola{font:12px Consolas,monospace;background:#212121;color:#e4e4e7;padding:8px 10px;border-radius:7px;white-space:pre-wrap;margin-top:12px}
+      #consola:empty{display:none} .falla{color:#c81e1e;font:13px Consolas,monospace;white-space:pre-wrap;background:#fef2f2;border:1px solid #fecaca;padding:9px;border-radius:7px}`;
     const pre = `
       const consola = document.getElementById('consola');
       const fmt = a => a.map(x => typeof x === 'string' ? x : (x instanceof Error ? x.message : JSON.stringify(x))).join(' ');
       console.log = (...a) => { consola.textContent += fmt(a) + '\\n'; };
       const err = console.error.bind(console);
-      console.error = (...a) => { const t = typeof a[0] === 'string' && a[0].includes('%s') ? (i => a[0].replace(/%s/g, () => String(a[i++])))(1) : fmt(a); consola.textContent += '✖ ' + t.split('\\n')[0] + '\\n'; err(...a); };
+      console.error = (...a) => { const t = typeof a[0] === 'string' && a[0].includes('%s') ? (i => a[0].replace(/%s/g, () => String(a[i++])))(1) : fmt(a); consola.textContent += 'Error: ' + t.split('\\n')[0] + '\\n'; err(...a); };
       const mostrarFalla = m => { document.getElementById('root').innerHTML = '<div class="falla">' + String(m).replace(/</g, '&lt;') + '</div>'; };
       window.onerror = (m) => mostrarFalla('Error: ' + m);
       class Limite extends React.Component {
@@ -624,18 +659,22 @@
     pasoActual = null;
     const filas = A.pasos.map((p, i) => {
       const r = estado.res[p.id];
-      const st = !r ? '<span style="color:var(--suave)">Sin comprobar</span>' : r.ok === r.total ? '<span style="color:var(--ok)">✔ Completo</span>' : `<span style="color:var(--aviso)">${r.ok}/${r.total}</span>`;
+      const st = !r ? `<span class="estado-paso nada">${I('circle-dashed')} Sin comprobar</span>`
+        : r.ok === r.total ? `<span class="estado-paso ok">${I('circle-check')} Completo</span>`
+          : `<span class="estado-paso medio">${I('circle-x')} ${r.ok} de ${r.total}</span>`;
       return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${st}</td></tr>`;
     }).join('');
     $('#vista').innerHTML = `
       <div class="entrega">
-        <div class="tarjeta">
-          <h2 style="margin-top:0">🏁 Calificar y ver la nota</h2>
-          <p>Al pulsar <b>Calificar mi actividad</b> el servidor compila y ejecuta <b>todas</b> las pruebas sobre tu código actual. Cada paso vale lo mismo. La nota va de <b>0.0 a 5.0</b> y se aprueba con <b>3.0</b>.</p>
-          <table class="tabla"><tr><th>Paso</th><th>Tu última comprobación</th></tr>${filas}</table>
-          <p style="color:var(--suave);font-size:14px">Puedes calificar varias veces. <b>Tu profesor ve todas tus notas</b> (la última y la mejor) directamente en el sistema: no tienes que enviarle nada.</p>
-          <div class="acciones"><button class="btn primario grande" id="calificar">🧮 Calificar mi actividad</button>
-            <span class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></span></div>
+        <div class="card">
+          <header><h2>${I('flag')} Calificar y ver la nota</h2>
+            <p>El servidor compila y ejecuta <b>todas</b> las pruebas sobre tu código actual. Cada paso vale lo mismo. La nota va de <b>0.0 a 5.0</b> y se aprueba con <b>3.0</b>.</p></header>
+          <section>
+            <div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Tu última comprobación</th></tr>${filas}</table></div>
+            <p>Puedes calificar varias veces. <b>Tu profesor ve todas tus notas</b> (la última y la mejor) directamente en el sistema: no tienes que enviarle nada.</p>
+          </section>
+          <footer class="acciones"><button class="btn" data-size="lg" id="calificar">${I('calculator')} Calificar mi actividad</button>
+            <span class="estado-carga oculto" id="cargando"><span class="girando"></span><span id="cargando-txt"></span></span></footer>
         </div>
         <div id="resultado-final"></div>
         <div id="historial"></div>
@@ -662,7 +701,7 @@
       pintarHistorial();
     } catch (e) {
       if (e.status === 401) { salir(); return; }
-      $('#resultado-final').innerHTML = `<div class="aviso mal">No se pudo calificar: ${esc(e.message)}</div>`;
+      $('#resultado-final').innerHTML = aviso('mal', 'cloud-off', 'No se pudo calificar: ' + esc(e.message));
     } finally {
       ocupado = false;
       btn.disabled = false;
@@ -677,25 +716,27 @@
     const filas = n.detalle.map((d, i) => {
       const fallidas = (d.pruebas || []).filter(p => !p[1]).map(p => '<li>' + esc(p[0]) + '</li>').join('');
       return `<tr><td>${i + 1}. ${esc(d.titulo)}${d.nota ? '<br><small style="color:var(--aviso)">' + esc(d.nota) + '</small>' : ''}${fallidas ? '<ul class="fallidas">' + fallidas + '</ul>' : ''}</td>
-        <td>${d.ok} / ${d.total}</td><td>${(5 / A.pasos.length * (d.total ? d.ok / d.total : 0)).toFixed(2)} / ${(5 / A.pasos.length).toFixed(2)}</td></tr>`;
+        <td style="white-space:nowrap">${d.ok} / ${d.total}</td><td style="white-space:nowrap">${(5 / A.pasos.length * (d.total ? d.ok / d.total : 0)).toFixed(2)} / ${(5 / A.pasos.length).toFixed(2)}</td></tr>`;
     }).join('');
     $('#resultado-final').innerHTML = `
-      <div class="tarjeta">
-        <div class="nota-grande">
-          <div><div style="color:var(--suave);font-size:14px">Tu nota</div><div class="valor ${aprueba ? 'aprueba' : 'pierde'}">${n.nota.toFixed(1)}</div></div>
-          <div><div style="font-size:20px;font-weight:700">${aprueba ? '¡Aprobaste la recuperación! 🎉' : 'Aún no alcanzas 3.0'}</div>
-          <div style="color:var(--suave)">${esc(estudiante.nombre)} · ${esc(estudiante.doc)} · ${fecha(n.fecha || Date.now())}</div>
-          <div style="margin-top:4px">✔ Esta nota quedó registrada para tu profesor.${aprueba ? '' : ' Puedes volver a los pasos incompletos, corregir y calificar de nuevo.'}</div></div>
-        </div>
-        <table class="tabla"><tr><th>Paso</th><th>Pruebas</th><th>Aporte a la nota</th></tr>${filas}</table>
+      <div class="card">
+        <section>
+          <div class="nota-grande">
+            <div><div class="suave" style="font-size:13px">Tu nota</div><div class="valor ${aprueba ? 'aprueba' : 'pierde'}">${n.nota.toFixed(1)}<small> / 5.0</small></div></div>
+            <div style="flex:1;min-width:240px"><div class="titulo-nota">${aprueba ? I('trophy') + ' ¡Aprobaste la recuperación!' : 'Aún no alcanzas 3.0'}</div>
+              <div class="suave">${esc(estudiante.nombre)} · ${esc(estudiante.doc)} · ${fecha(n.fecha || Date.now())}</div>
+              <div class="registrada">${I('circle-check')}<span>Esta nota quedó registrada para tu profesor.${aprueba ? '' : ' Puedes volver a los pasos incompletos, corregir y calificar de nuevo.'}</span></div></div>
+          </div>
+        </section>
+        <section><div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Pruebas</th><th>Aporte a la nota</th></tr>${filas}</table></div></section>
       </div>`;
   }
 
   function pintarHistorial() {
     const h = $('#historial');
     if (!h || !entregas.length) return;
-    h.innerHTML = `<div class="tarjeta"><h3 style="margin-top:0">Tus calificaciones registradas</h3>
-      <table class="tabla"><tr><th>Fecha</th><th>Nota</th></tr>${entregas.slice(0, 10).map(e => `<tr><td>${fecha(e.creado)}</td><td><b>${Number(e.nota).toFixed(1)}</b></td></tr>`).join('')}</table></div>`;
+    h.innerHTML = `<div class="card"><header><h3 style="display:flex;align-items:center;gap:8px">${I('history')} Tus calificaciones registradas</h3></header>
+      <section><div class="marco-tabla"><table class="tabla"><tr><th>Fecha</th><th>Nota</th></tr>${entregas.slice(0, 10).map(e => `<tr><td>${fecha(e.creado)}</td><td><b class="${e.nota >= 3 ? 'estado-paso ok' : 'estado-paso medio'}">${Number(e.nota).toFixed(1)}</b></td></tr>`).join('')}</table></div></section></div>`;
   }
 
   window.addEventListener('DOMContentLoaded', iniciar);

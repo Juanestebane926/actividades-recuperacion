@@ -3,42 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%233d5bd9%27/%3E%3Cg transform=%27translate(4 4)%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z%27 /%3E%3Cpath d=%27M22 10v6%27 /%3E%3Cpath d=%27M6 12.5V16a6 3 0 0 0 12 0v-3.5%27 /%3E%3C/g%3E%3C/svg%3E">
+<script>(function(){var m=matchMedia("(prefers-color-scheme: dark)"),r=document.documentElement;function a(){r.classList.toggle("dark",m.matches)}a();m.addEventListener&&m.addEventListener("change",a)})()</script>
+<meta name="color-scheme" content="light dark">
 <title>Panel docente · Recuperación</title>
-<link rel="stylesheet" href="../assets/motor.css?v=20">
+<link rel="stylesheet" href="../assets/vendor/basecoat-1.1.0.min.css">
+<link rel="stylesheet" href="../assets/motor.css?v=30">
 <style>
-  .panel { max-width: 1400px; margin: 0 auto; padding: 14px 16px 40px; }
-  .cab-panel { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-  .cab-panel h1 { margin: 0; font-size: 22px; flex: 1; }
-  .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-  .filtros input, .filtros select { font: inherit; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); }
-  .tabla-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--borde); border-radius: var(--radio); }
+  .tablero { max-width: 1400px; margin: 0 auto; padding: 0 20px 40px; }
+  .cab-panel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px 0; }
+  .cab-panel .marca { flex: 1; }
+  .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .resumen .card { gap: 6px; padding: 14px 16px; }
+  .resumen .etq { display: flex; align-items: center; justify-content: space-between; color: var(--muted-foreground); font-size: 13px; font-weight: 500; }
+  .resumen .num { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .filtros .input { width: 260px; } .filtros .select { width: auto; }
+  .filtros .cuenta { color: var(--muted-foreground); font-size: 13px; margin-left: auto; }
+  .tabla-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
   table.lista { border-collapse: collapse; width: 100%; font-size: 13.5px; }
-  table.lista th, table.lista td { padding: 6px 9px; border-bottom: 1px solid var(--borde); text-align: left; white-space: nowrap; }
-  table.lista th { background: var(--panel2); position: sticky; top: 0; cursor: pointer; user-select: none; }
-  table.lista tr.fila:hover td { background: var(--panel2); cursor: pointer; }
-  .pp { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; font-size: 11px; font-weight: 700; margin-right: 2px; border: 1px solid var(--borde); color: var(--suave); }
+  table.lista th, table.lista td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  table.lista tr:last-child td { border-bottom: none; }
+  table.lista th { background: var(--muted); color: var(--muted-foreground); font-weight: 500; font-size: 12.5px; position: sticky; top: 0; }
+  table.lista th[data-col] { cursor: pointer; user-select: none; }
+  table.lista th[data-col]:hover { color: var(--foreground); }
+  table.lista th .ico { width: 13px; height: 13px; margin-left: 3px; }
+  table.lista tr.fila:hover td { background: var(--muted); cursor: pointer; }
+  .pp { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 600; margin-right: 3px; border: 1px solid var(--border); color: var(--muted-foreground); }
   .pp.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
   .pp.medio { background: var(--aviso-bg); color: var(--aviso); border-color: var(--aviso); }
-  .nota { font-weight: 800; }
+  .nota { font-weight: 700; font-variant-numeric: tabular-nums; }
   .nota.ap { color: var(--ok); } .nota.rep { color: var(--mal); }
-  .resumen { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-  .resumen .tarjeta { margin: 0; padding: 10px 16px; min-width: 150px; }
-  .resumen .num { font-size: 26px; font-weight: 800; }
-  dialog { border: 1px solid var(--borde); border-radius: 12px; padding: 0; width: min(1150px, 96vw); max-height: 92vh; background: var(--panel); color: var(--texto); }
-  dialog::backdrop { background: rgba(10, 15, 30, .55); }
-  .det { padding: 16px 20px; overflow: auto; max-height: 92vh; }
-  .det h2 { margin: 0; }
-  .det pre.codigo { background: var(--codigo-bg); color: #e8eef2; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; overflow: auto; max-height: 420px; }
-  .pestanas-doc { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0; }
-  .pestanas-doc button { border: 1px solid var(--borde); background: var(--panel2); border-radius: 7px; padding: 4px 10px; font-family: var(--mono); font-size: 12.5px; color: var(--texto); }
-  .pestanas-doc button.activa { background: var(--primario); color: #fff; border-color: var(--primario); }
+  dialog#dialogo { border: 1px solid var(--border); border-radius: 12px; padding: 0; width: min(1150px, 96vw); max-height: 92vh; background: var(--card); color: var(--foreground); margin: auto; box-shadow: 0 10px 40px rgba(0, 0, 0, .25); }
+  dialog#dialogo::backdrop { background: rgba(10, 10, 15, .55); }
+  .det { padding: 20px 24px; overflow: auto; max-height: 92vh; display: grid; gap: 14px; }
+  .det h2 { margin: 0; font-size: 20px; font-weight: 700; }
+  .det h3 { margin: 6px 0 0; font-size: 14.5px; font-weight: 600; }
+  .det .marco-tabla { margin: 0; }
+  .det pre.codigo { background: var(--codigo-bg); color: var(--codigo-texto); padding: 12px 14px; border-radius: 8px; font-size: 12.5px; overflow: auto; max-height: 420px; margin: 0; }
+  .pestanas-doc { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pestanas-doc .btn { font-family: var(--mono); font-weight: 400; }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <dialog id="dialogo"><div class="det" id="detalle"></div></dialog>
-<script src="../assets/config.js?v=21"></script>
-<script src="panel.js?v=21"></script>
+<script defer src="../assets/config.js?v=30"></script>
+<script defer src="../assets/iconos.js?v=30"></script>
+<script defer src="panel.js?v=30"></script>
 </body>
 </html>

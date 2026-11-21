@@ -9,7 +9,7 @@
     temas: ['Componentes y props', 'Template literals', 'Render condicional (ternario y &&)', 'Listas con map y key', 'filter', 'useState y eventos', 'Formularios controlados', 'useEffect y spread'],
     duracion: '60 a 90 minutos',
     motor: 'react',
-    aviso: '⚛️ Tu código se ejecuta <b>de verdad</b>: cada componente está en su propio archivo con sus <code>import</code> y <code>export</code>, como en un proyecto de Vite. <b>▶ Ejecutar</b> arma tu app y la muestra funcionando. <b>✔ Comprobar</b> corre pruebas con <b>React Testing Library</b> en el servidor del curso. Si olvidas un <code>import</code> o un <code>export</code>, verás el mismo error que en Vite.',
+    aviso: 'Tu código se ejecuta <b>de verdad</b>: cada componente está en su propio archivo con sus <code>import</code> y <code>export</code>, como en un proyecto de Vite. <b>Ejecutar</b> arma tu app y la muestra funcionando. <b>Comprobar</b> corre pruebas con <b>React Testing Library</b> en el servidor del curso. Si olvidas un <code>import</code> o un <code>export</code>, verás el mismo error que en Vite.',
     componentes: ['Saludo', 'Perfil', 'EstadoBadge', 'ListaEstudiantes', 'FiltroAprobados', 'FormularioEstudiante', 'App'],
     archivos: {
       'Saludo.jsx': { ruta: 'codigo/Saludo.jsx' },
@@ -44,7 +44,7 @@ const info = \`\${nombre} tiene \${edad} años\`;   // "Juan tiene 20 años"</co
             <li><code>Saludo</code>: recibe la prop <code>nombre</code> y muéstrala dentro del <code>&lt;h2&gt;</code> → <i>Hola, Ana</i>.</li>
             <li><code>Perfil</code>: arma el texto <i>Ana tiene 18 años</i> con un template literal.</li>
           </ol>
-          <p>Pulsa <b>▶ Ejecutar</b> para ver la vista previa y <b>✔ Comprobar</b> para revisar.</p>`,
+          <p>Pulsa <b>Ejecutar</b> para ver la vista previa y <b>Comprobar</b> para revisar.</p>`,
         pistas: [
           'En los dos espacios de Saludo va la misma palabra: <code>nombre</code>.',
           'Dentro de las comillas invertidas del template literal escribe: <code>${nombre} tiene ${edad} años</code>'
@@ -124,7 +124,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
 //      valor     función para cambiarlo   valor inicial
 
 &lt;button onClick={() =&gt; setContador(contador + 1)}&gt;+1&lt;/button&gt;</code></pre>
-          <p>⚠️ Nunca se cambia el estado directamente (<code>contador = 5</code> ✘): siempre con la función <code>set...</code>.</p>
+          <p><b>Ojo:</b> Nunca se cambia el estado directamente (<code>contador = 5</code> no funciona): siempre con la función <code>set...</code>.</p>
           <h3>filter</h3>
           <p><code>filter</code> crea un arreglo nuevo solo con los elementos que cumplen la condición:</p>
 <pre class="ejemplo"><code>const aprobados = estudiantes.filter(est =&gt; est.nota &gt;= 3.0);</code></pre>
@@ -168,7 +168,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>Limpia la nota (texto vacío).</li>
             <li>Completa los dos <code>onChange</code>.</li>
           </ol>
-          <p>Con <b>▶ Ejecutar</b> puedes escribir en el formulario de la vista previa y ver en la consola lo que recibe <code>onAgregar</code>.</p>`,
+          <p>Con <b>Ejecutar</b> puedes escribir en el formulario de la vista previa y ver en la consola lo que recibe <code>onAgregar</code>.</p>`,
         pistas: [
           '<code>e.preventDefault();</code> y <code>nota: Number(nota)</code>',
           'Para limpiar: <code>setNota(\'\')</code> (comillas vacías).',
@@ -200,7 +200,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>En <code>agregar</code>, copia la lista con spread.</li>
             <li>Pásale <code>agregar</code> al formulario por la prop <code>onAgregar</code>.</li>
           </ol>
-          <p>Usa <b>▶ Ejecutar</b> para probar tu app completa: agrega un estudiante y filtra. Cuando este paso pase, ve a <b>🏁 Nota</b>.</p>`,
+          <p>Usa <b>Ejecutar</b> para probar tu app completa: agrega un estudiante y filtra. Cuando este paso pase, ve a <b>Nota</b>.</p>`,
         pistas: [
           '<code>useState(INICIALES)</code> y <code>[estudiantes]</code> como dependencias.',
           '<code>setEstudiantes([...estudiantes, conId]);</code>',
