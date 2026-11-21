@@ -48,11 +48,6 @@ if (edad &lt; 13) {
           <li>En <code>estado</code>: completa el operador de comparación y el texto que se devuelve cuando no aprueba (<code>"Reprobado"</code>).</li>
           <li>En <code>nivel</code>: completa la condición del <code>else if</code> para el rango “Aceptable”.</li>
         </ol>`,
-      pistas: [
-        'El operador “mayor o igual” se escribe <code>&gt;=</code>.',
-        'El texto debe ir entre comillas dobles y con mayúscula inicial: <code>return "Reprobado";</code>',
-        'Si el programa llegó al <code>else if</code>, ya sabemos que la nota es menor que 4.5. Solo falta preguntar <code>nota &gt;= 3.0</code>.'
-      ]
     },
     {
       id: 'w2',
@@ -85,11 +80,6 @@ for (int i = 0; i &lt; edades.length; i++) {
           <li><code>promedio</code>: completa la condición del <code>for</code>, el acumulador y el cálculo final.</li>
           <li><code>contarAprobados</code>: escribe tú el <code>for</code> con un <code>if</code> que sume 1 al contador por cada nota &gt;= 3.0.</li>
         </ol>`,
-      pistas: [
-        'El for de promedio queda: <code>for (int i = 0; i &lt; notas.length; i++)</code> y adentro <code>suma = suma + notas[i];</code>',
-        'El promedio es <code>return suma / notas.length;</code>',
-        'contarAprobados es casi igual al ejemplo de <code>mayores</code>: cambia <code>edades</code> por <code>notas</code>, 18 por 3.0 y <code>mayores</code> por <code>contador</code>.'
-      ]
     },
     {
       id: 'w3',
@@ -117,11 +107,6 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
           <li>En <code>getEstadoAcademico()</code> escribe la condición de aprobado.</li>
           <li>En <code>toString()</code> agrega la nota y el estado (usa el método <code>getEstadoAcademico()</code>).</li>
         </ol>`,
-      pistas: [
-        'Constructor: <code>this.edad = edad;</code> y <code>this.nota = nota;</code>. Getters: <code>return edad;</code> y <code>return nota;</code>',
-        'La condición de aprobado es la misma del paso 1: <code>nota &gt;= 3.0</code>',
-        'En toString: <code>.append(nota)</code> y <code>.append(getEstadoAcademico())</code>'
-      ]
     },
     {
       id: 'w4',
@@ -152,11 +137,6 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
           <li><code>total</code>: devuelve el tamaño de la lista.</li>
           <li><code>buscarPorNombre</code>: compara sin importar mayúsculas.</li>
         </ol>`,
-      pistas: [
-        'El primer espacio es el nombre de la clase de lista: <code>ArrayList</code>.',
-        '<code>agregar</code>: <code>estudiantes.add(estudiante);</code> — <code>total</code>: <code>estudiantes.size()</code>',
-        'En buscarPorNombre: <code>e.getNombre().equalsIgnoreCase(nombre)</code>'
-      ]
     },
     {
       id: 'w5',
@@ -192,11 +172,6 @@ public class EstudianteServlet extends HttpServlet { ... }</code></pre>
           <li>Dentro del <code>for</code> agrega el estudiante de la posición <code>i</code>.</li>
           <li>Envía el JSON con <code>out.print(...)</code>.</li>
         </ol>`,
-      pistas: [
-        'Content type: <code>"application/json;charset=UTF-8"</code>',
-        'Total: <code>lista.size()</code>. Dentro del for: <code>lista.get(i)</code>',
-        'Lo que se envía es el texto del StringBuilder: <code>out.print(json.toString());</code>'
-      ]
     },
     {
       id: 'w6',
@@ -243,12 +218,6 @@ try {
     out.print("{\\"mensaje\\":\\"Edad y nota deben ser numericas\\"}");
 }</code></pre>
         <p>Con <b>Ejecutar</b> Tomcat recibe las peticiones de <code>peticiones.http</code> (varios POST de prueba) y verás sus respuestas reales. Puedes agregar las tuyas.</p>`,
-      pistas: [
-        'Los métodos para convertir son <code>Integer.parseInt</code> y <code>Double.parseDouble</code>.',
-        'Para guardar: <code>dao.agregar(nuevo);</code>',
-        'El código 201 es <code>HttpServletResponse.SC_CREATED</code>.',
-        'Todo el código va <b>dentro</b> del <code>try (PrintWriter out = ...) { }</code> que ya existe, porque usa <code>out</code>.'
-      ]
     },
     {
       id: 'w7',
@@ -286,11 +255,6 @@ if (buscado != null) {
           <li>Importa <code>Estadisticas</code> y agrega el campo <code>"promedio"</code> a la lista.</li>
         </ol>
         <p>Cuando pase, ve a <b>Nota</b> para calificar toda la actividad.</p>`,
-      pistas: [
-        'El bloque de búsqueda va al inicio de <code>doGet</code>, después de <code>setContentType</code>.',
-        'Si sale “cannot find symbol Estadisticas”, te falta el <code>import</code>.',
-        'Este paso también necesita que <code>Estadisticas.promedio</code> (paso 2) funcione.'
-      ]
     }
   ]
 };

@@ -7,9 +7,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { PUERTO, HOST, RAIZ, SERVIDOR, DOCENTE_CLAVE, CLAVE_GENERADA, SECRETO, MAX_PARALELO, ORIGENES } from './config.js';
-import { Estudiantes, Progreso, Intentos, Entregas, pinCorrecto, resumen } from './db.js';
+import { Estudiantes, Progreso, Intentos, Entregas, resumen } from './db.js';
 import { ACTIVIDADES, archivosValidos } from './actividades.js';
 import { evaluarPaso, calificar } from './evaluar.js';
+import { PISTAS, COSTO_PISTA, intentosParaPista } from './pistas.js';
 import { javaDisponible, precalentar, precalentarCurso } from './java.js';
 import { enCola } from './procesos.js';
 
@@ -67,7 +68,7 @@ function claveCorrecta(clave) {
 }
 
 // ---------------------------------------------------------------- límites de intentos
-const fallosPin = new Map();     // "actividad|doc" o "docente|ip" -> { n, desde }
+const fallosPin = new Map();     // "docente|ip" -> { n, desde }
 function bloqueado(clave) {
   const f = fallosPin.get(clave);
   if (!f) return false;
@@ -86,7 +87,7 @@ const ocupados = new Set();      // estudiantes con una evaluación en curso
 function estudianteDe(req) {
   const t = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const e = t && Estudiantes.porToken(t);
-  if (!e) fallar(401, 'Tu sesión no es válida. Vuelve a entrar con tu documento y PIN.');
+  if (!e) fallar(401, 'Tu sesión no es válida. Vuelve a entrar con tu correo.');
   const act = ACTIVIDADES[e.actividad];
   if (!act) fallar(404, 'Actividad desconocida');
   return { e, act };
@@ -107,9 +108,6 @@ function guardarEstado(e, act, recibido) {
   const s = estadoDe(e, act);
   if (recibido.archivos) s.archivos = archivosValidos(act, { ...s.archivos, ...recibido.archivos });
   if (Number.isInteger(recibido.paso) && recibido.paso >= 0 && recibido.paso <= act.pasos.length) s.paso = recibido.paso;
-  if (recibido.pistas && typeof recibido.pistas === 'object') {
-    for (const p of act.pasos) { const v = Number(recibido.pistas[p.id]); if (v > 0 && v <= 10) s.pistas[p.id] = Math.max(s.pistas[p.id] || 0, v); }
-  }
   if (recibido.peticiones && typeof recibido.peticiones === 'object') {
     for (const p of act.pasos) { const v = recibido.peticiones[p.id]; if (typeof v === 'string') s.peticiones[p.id] = v.slice(0, 3000); }
   }
@@ -118,30 +116,46 @@ function guardarEstado(e, act, recibido) {
   return s;
 }
 
+/** Nombre y apellido juntos, como se muestran en la página y en el panel. */
+const nombreCompleto = e => (e.nombre + ' ' + (e.apellido || '')).trim();
+
 function publico(e, s) {
-  return { nombre: e.nombre, doc: e.doc, actividad: e.actividad, estado: s, entregas: Entregas.de(e.id).slice(0, 5) };
+  return { nombre: nombreCompleto(e), correo: e.correo, actividad: e.actividad, estado: s, entregas: Entregas.de(e.id).slice(0, 5),
+    pistas: infoPistas(e, ACTIVIDADES[e.actividad], s) };
 }
+
+/**
+ * Estado de las pistas de cada paso: cuántas hay, el texto de las que ya abrió, cuántas comprobaciones fallidas lleva
+ * y cuántas necesita cada pista. El texto de las cerradas nunca sale del servidor.
+ */
+function infoPistas(e, actividad, s) {
+  const fallos = Intentos.fallos(e.id);
+  const r = {};
+  for (const p of actividad.pasos) {
+    const lista = (PISTAS[actividad.id] || {})[p.id] || [];
+    const abiertas = Math.min(lista.length, s.pistas[p.id] || 0);
+    r[p.id] = { total: lista.length, abiertas: lista.slice(0, abiertas), fallos: fallos[p.id] || 0,
+      requiere: lista.map((x, i) => intentosParaPista(i + 1)), costo: COSTO_PISTA };
+  }
+  return r;
+}
+
+const limpiarTexto = (v, max) => String(v || '').trim().replace(/\s+/g, ' ').slice(0, max);
 
 const rutasApi = {
   'POST /api/sesion': async (req, res) => {
     const b = await leerJson(req, 10_000);
     const act = ACTIVIDADES[b.actividad] || fallar(404, 'Actividad desconocida');
-    const nombre = String(b.nombre || '').trim().replace(/\s+/g, ' ').slice(0, 80);
-    const doc = String(b.doc || '').trim().replace(/\s+/g, '').slice(0, 30);
-    const pin = String(b.pin || '').trim();
-    if (!/^[\w.-]{3,30}$/.test(doc)) fallar(400, 'Escribe tu documento o código de estudiante (solo números, letras, punto o guion).');
-    if (!/^\d{4,8}$/.test(pin)) fallar(400, 'El PIN debe tener de 4 a 8 números.');
-    const clave = act.id + '|' + doc;
-    if (bloqueado(clave)) fallar(429, 'Demasiados intentos con un PIN incorrecto. Espera 15 minutos o pídele al profesor que restablezca tu PIN.');
-    let e = Estudiantes.porDoc(act.id, doc);
-    if (e) {
-      if (!pinCorrecto(pin, e.pin)) {
-        fallo(clave);
-        fallar(401, 'Ya hay una actividad con ese documento y el PIN no coincide. Escribe el PIN que elegiste al empezar (si lo olvidaste, pídele al profesor que lo restablezca).');
-      }
-    } else {
-      if (nombre.length < 5 || !/\s/.test(nombre)) fallar(400, 'Escribe tu nombre completo (nombre y apellido).');
-      e = Estudiantes.crear(act.id, doc, nombre, pin);
+    // El correo identifica al estudiante: con el mismo correo sigue donde iba, en este u otro computador
+    const correo = String(b.correo || '').trim().toLowerCase().slice(0, 120);
+    const nombre = limpiarTexto(b.nombre, 60);
+    const apellido = limpiarTexto(b.apellido, 60);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) fallar(400, 'Escribe un correo válido, por ejemplo ana.perez@gmail.com.');
+    let e = Estudiantes.porCorreo(act.id, correo);
+    if (!e) {
+      if (nombre.length < 2) fallar(400, 'Escribe tu nombre.');
+      if (apellido.length < 2) fallar(400, 'Escribe tu apellido.');
+      e = Estudiantes.crear(act.id, correo, nombre, apellido);
       Progreso.guardar(e.id, estadoInicial(act));
     }
     Estudiantes.tocar(e.id);
@@ -176,10 +190,12 @@ const rutasApi = {
         const ok = (r.pruebas || []).filter(x => x.ok).length;
         const total = Math.max(paso.nPruebas || 0, (r.pruebas || []).length);
         const s2 = estadoDe(e, act);
-        s2.res[paso.id] = { ok, total, t: Date.now() };
+        // Con espacios ____ pendientes el paso no cuenta como completo (al calificar valdría 0)
+        s2.res[paso.id] = { ok, total, t: Date.now(), ...(r.pendientes ? { pendientes: r.pendientes.length } : {}) };
         Progreso.guardar(e.id, s2);
         Intentos.registrar(e.id, paso.id, modo, ok, total, r.ms);
         r.progreso = s2.res;
+        r.pistas = infoPistas(e, act, s2)[paso.id];
       } else {
         Intentos.registrar(e.id, paso.id, modo, null, null, r.ms);
       }
@@ -189,6 +205,27 @@ const rutasApi = {
     }
   },
 
+  // Abre la siguiente pista de un paso si ya se desbloqueó (o devuelve las que ya abrió). Abrirla cuesta nota.
+  'POST /api/pista': async (req, res) => {
+    const { e, act } = estudianteDe(req);
+    const b = await leerJson(req, 2000);
+    const paso = act.pasos.find(p => p.id === b.paso) || fallar(404, 'Paso desconocido');
+    const lista = (PISTAS[act.id] || {})[paso.id] || [];
+    const n = Number(b.n);
+    if (!Number.isInteger(n) || n < 1 || n > lista.length) fallar(400, 'Esa pista no existe.');
+    const s = estadoDe(e, act);
+    const abiertas = s.pistas[paso.id] || 0;
+    if (n > abiertas + 1) fallar(400, `Primero abre la pista ${abiertas + 1}.`);
+    if (n === abiertas + 1) {
+      const fallos = Intentos.fallos(e.id)[paso.id] || 0;
+      const requiere = intentosParaPista(n);
+      if (fallos < requiere) fallar(403, `Esta pista se desbloquea después de ${requiere} intentos con Comprobar en este paso. Llevas ${fallos}.`);
+      s.pistas[paso.id] = n;
+      Progreso.guardar(e.id, s);
+    }
+    enviarJson(res, 200, { pistas: infoPistas(e, act, s)[paso.id] });
+  },
+
   'POST /api/calificar': async (req, res) => {
     const { e, act } = estudianteDe(req);
     const b = await leerJson(req);
@@ -196,7 +233,7 @@ const rutasApi = {
     ocupados.add(e.id);
     try {
       const s = guardarEstado(e, act, { archivos: b.archivos });
-      const r = await calificar(act, s.archivos);
+      const r = await calificar(act, s.archivos, s.pistas);
       const archivos = {};
       for (const n of Object.keys(act.archivos)) if (!act.archivos[n].soloLectura) archivos[n] = s.archivos[n];
       const id = Entregas.guardar(e.id, r.nota, r.detalle, archivos);
@@ -229,9 +266,9 @@ const rutasApi = {
     const filas = resumen().map(r => {
       const act = ACTIVIDADES[r.actividad];
       const s = r.estado ? JSON.parse(r.estado) : { res: {} };
-      const pasos = act ? act.pasos.map(p => { const x = (s.res || {})[p.id]; return x ? [x.ok, x.total] : null; }) : [];
+      const pasos = act ? act.pasos.map(p => { const x = (s.res || {})[p.id]; return x ? [x.ok, x.total, (s.pistas || {})[p.id] || 0] : null; }) : [];
       return {
-        id: r.id, actividad: r.actividad, curso: act?.curso || r.actividad, doc: r.doc, nombre: r.nombre, creado: r.creado, ultimo: r.ultimo,
+        id: r.id, actividad: r.actividad, curso: act?.curso || r.actividad, correo: r.correo, nombre: nombreCompleto(r), creado: r.creado, ultimo: r.ultimo,
         pasoActual: s.paso, pasos, ultimaNota: r.ultima_nota, ultimaFecha: r.ultima_fecha, mejorNota: r.mejor_nota,
         entregas: r.n_entregas, comprobaciones: r.n_comprobar, ejecuciones: r.n_ejecutar,
       };
@@ -241,10 +278,10 @@ const rutasApi = {
   },
   'GET /api/docente/notas.csv': async (req, res) => {
     soloDocente(req);
-    const filas = [['Curso', 'Documento', 'Nombre', 'Última nota', 'Fecha última nota', 'Mejor nota', 'Entregas', 'Comprobaciones', 'Última actividad']];
+    const filas = [['Curso', 'Nombre', 'Apellido', 'Correo', 'Última nota', 'Fecha última nota', 'Mejor nota', 'Entregas', 'Comprobaciones', 'Última actividad']];
     const f = t => t ? new Date(t).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '';
     for (const r of resumen()) {
-      filas.push([ACTIVIDADES[r.actividad]?.curso || r.actividad, r.doc, r.nombre, r.ultima_nota ?? '', f(r.ultima_fecha), r.mejor_nota ?? '', r.n_entregas, r.n_comprobar, f(r.ultimo)]);
+      filas.push([ACTIVIDADES[r.actividad]?.curso || r.actividad, r.nombre, r.apellido, r.correo, r.ultima_nota ?? '', f(r.ultima_fecha), r.mejor_nota ?? '', r.n_entregas, r.n_comprobar, f(r.ultimo)]);
     }
     const csv = '﻿' + filas.map(l => l.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
     res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="notas-recuperacion.csv"', 'Cache-Control': 'no-store' });
@@ -260,7 +297,7 @@ const rutasDocenteId = {
     const e = Estudiantes.porId(id) || fallar(404, 'No existe');
     const act = ACTIVIDADES[e.actividad];
     enviarJson(res, 200, {
-      id: e.id, nombre: e.nombre, doc: e.doc, actividad: e.actividad, curso: act.curso, creado: e.creado, ultimo: e.ultimo,
+      id: e.id, nombre: nombreCompleto(e), correo: e.correo, actividad: e.actividad, curso: act.curso, creado: e.creado, ultimo: e.ultimo,
       estado: estadoDe(e, act), entregas: Entregas.de(e.id), intentos: Intentos.de(e.id),
       pasos: act.pasos.map(p => ({ id: p.id, titulo: p.titulo })), editables: Object.keys(act.archivos).filter(n => !act.archivos[n].soloLectura),
     });
@@ -277,15 +314,7 @@ const rutasDocenteId = {
     } else {
       archivos = estadoDe(e, act).archivos;
     }
-    enviarJson(res, 200, await calificar(act, archivos));
-  },
-  'POST pin': async (req, res, id) => {
-    const e = Estudiantes.porId(id) || fallar(404, 'No existe');
-    const b = await leerJson(req, 2000);
-    if (!/^\d{4,8}$/.test(String(b.pin || ''))) fallar(400, 'El PIN debe tener de 4 a 8 números.');
-    Estudiantes.cambiarPin(e.id, String(b.pin));
-    fallosPin.delete(e.actividad + '|' + e.doc);
-    enviarJson(res, 200, { ok: true });
+    enviarJson(res, 200, await calificar(act, archivos, estadoDe(e, act).pistas));
   },
   'DELETE': async (req, res, id) => {
     Estudiantes.borrar(id);

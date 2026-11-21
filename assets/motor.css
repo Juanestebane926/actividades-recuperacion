@@ -588,3 +588,33 @@ html.dark .guia-foco { box-shadow: 0 0 0 3px var(--resaltador), 0 0 0 9999px rgb
 .guia-globo code.blanco { font-size: .85em; }
 .guia-botones { display: flex; align-items: center; gap: 6px; }
 .guia-botones .espacio { flex: 1; }
+
+/* Pestañas con espacios ____ por completar: un punto amarillo después del nombre */
+.pestanas button .punto { display: none; width: 7px; height: 7px; border-radius: 50%; background: var(--resaltador); }
+.pestanas button.pendiente .punto { display: inline-block; }
+.aviso ul.pendientes { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 3px; }
+.aviso ul.pendientes a { color: inherit; text-decoration: underline; }
+
+/* ---------- pistas: cerradas, disponibles (con costo) y abiertas ---------- */
+.pistas-regla { font-size: var(--t-sm); color: var(--muted-foreground); margin: 0 0 10px; }
+.pista { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--foreground); text-align: left; font: inherit; }
+.pista > .ico { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 2px; }
+.pista > span { display: grid; gap: 1px; min-width: 0; }
+.pista b { font-size: var(--t-sm); }
+.pista small { font-size: var(--t-xs); color: var(--muted-foreground); }
+.pista.bloqueada { background: var(--muted); border-style: dashed; color: var(--muted-foreground); }
+.pista.bloqueada b { color: var(--muted-foreground); }
+.pista.disponible { cursor: pointer; border-color: var(--resaltador-borde); transition: background .12s, border-color .12s; }
+.pista.disponible > .ico { color: #b08800; }
+html.dark .pista.disponible > .ico { color: var(--resaltador); }
+.pista.disponible:hover { background: var(--resaltador-suave); }
+.pista.disponible.confirmar { background: var(--resaltador-suave); border-color: var(--resaltador); }
+.pista.disponible:disabled { opacity: .6; cursor: default; }
+.pista.abierta { display: block; border-color: var(--resaltador-borde); background: var(--resaltador-suave); }
+.pista-cab { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.pista-cab .ico { width: 16px; height: 16px; color: #b08800; }
+html.dark .pista-cab .ico { color: var(--resaltador); }
+.pista-costo { margin-left: auto; font-size: var(--t-xs); color: var(--muted-foreground); white-space: nowrap; }
+.pista-texto { font-size: var(--t-base); line-height: 1.55; }
+.pistas + .aviso, .pista + .aviso { margin-top: 8px; }

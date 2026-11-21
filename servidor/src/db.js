@@ -1,4 +1,5 @@
 // Base de datos SQLite (incluida en Node, sin dependencias): estudiantes, avance, intentos y notas.
+// El estudiante se identifica con su correo (uno por actividad); no hay PIN.
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,13 +14,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS estudiantes (
     id INTEGER PRIMARY KEY,
     actividad TEXT NOT NULL,
-    doc TEXT NOT NULL,
+    correo TEXT NOT NULL,
     nombre TEXT NOT NULL,
-    pin TEXT NOT NULL,
+    apellido TEXT NOT NULL DEFAULT '',
     token TEXT NOT NULL UNIQUE,
     creado INTEGER NOT NULL,
     ultimo INTEGER NOT NULL,
-    UNIQUE (actividad, doc)
+    UNIQUE (actividad, correo)
   );
   CREATE TABLE IF NOT EXISTS progreso (
     estudiante_id INTEGER PRIMARY KEY REFERENCES estudiantes(id) ON DELETE CASCADE,
@@ -46,25 +47,21 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS entregas_est ON entregas (estudiante_id);
 `);
 
-// ---------------------------------------------------------------- PIN (scrypt con sal)
-export function hashPin(pin) {
-  const sal = crypto.randomBytes(12).toString('hex');
-  return sal + ':' + crypto.scryptSync(String(pin), sal, 24).toString('hex');
-}
-export function pinCorrecto(pin, guardado) {
-  const [sal, h] = String(guardado).split(':');
-  const x = crypto.scryptSync(String(pin), sal, 24);
-  return crypto.timingSafeEqual(x, Buffer.from(h, 'hex'));
+// Migración de las bases creadas con documento + PIN: doc pasa a ser correo, se agrega apellido y se quita el PIN.
+// Los registros viejos conservan su documento en la columna correo.
+{
+  const columnas = new Set(db.prepare('PRAGMA table_info(estudiantes)').all().map(c => c.name));
+  if (columnas.has('doc') && !columnas.has('correo')) db.exec('ALTER TABLE estudiantes RENAME COLUMN doc TO correo');
+  if (!columnas.has('apellido')) db.exec("ALTER TABLE estudiantes ADD COLUMN apellido TEXT NOT NULL DEFAULT ''");
+  if (columnas.has('pin')) db.exec('ALTER TABLE estudiantes DROP COLUMN pin');
 }
 
 const q = {
-  porDoc: db.prepare('SELECT * FROM estudiantes WHERE actividad = ? AND doc = ?'),
+  porCorreo: db.prepare('SELECT * FROM estudiantes WHERE actividad = ? AND correo = ?'),
   porToken: db.prepare('SELECT * FROM estudiantes WHERE token = ?'),
   porId: db.prepare('SELECT * FROM estudiantes WHERE id = ?'),
-  crear: db.prepare('INSERT INTO estudiantes (actividad, doc, nombre, pin, token, creado, ultimo) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  crear: db.prepare('INSERT INTO estudiantes (actividad, correo, nombre, apellido, token, creado, ultimo) VALUES (?, ?, ?, ?, ?, ?, ?)'),
   tocar: db.prepare('UPDATE estudiantes SET ultimo = ? WHERE id = ?'),
-  nombre: db.prepare('UPDATE estudiantes SET nombre = ? WHERE id = ?'),
-  cambiarPin: db.prepare('UPDATE estudiantes SET pin = ?, token = ? WHERE id = ?'),
   leerProgreso: db.prepare('SELECT estado FROM progreso WHERE estudiante_id = ?'),
   guardarProgreso: db.prepare(`INSERT INTO progreso (estudiante_id, estado, actualizado) VALUES (?, ?, ?)
     ON CONFLICT (estudiante_id) DO UPDATE SET estado = excluded.estado, actualizado = excluded.actualizado`),
@@ -73,8 +70,11 @@ const q = {
   entregas: db.prepare('SELECT id, nota, detalle, creado FROM entregas WHERE estudiante_id = ? ORDER BY id DESC'),
   entrega1: db.prepare('SELECT * FROM entregas WHERE id = ?'),
   intentosDe: db.prepare('SELECT paso, modo, ok, total, ms, creado FROM intentos WHERE estudiante_id = ? ORDER BY id DESC LIMIT 300'),
+  // Comprobaciones que no pasaron todas las pruebas (las que desbloquean pistas)
+  fallos: db.prepare(`SELECT paso, COUNT(*) AS n FROM intentos
+    WHERE estudiante_id = ? AND modo = 'comprobar' AND (ok IS NULL OR total IS NULL OR ok < total) GROUP BY paso`),
   resumen: db.prepare(`
-    SELECT e.id, e.actividad, e.doc, e.nombre, e.creado, e.ultimo, p.estado,
+    SELECT e.id, e.actividad, e.correo, e.nombre, e.apellido, e.creado, e.ultimo, p.estado,
       (SELECT nota FROM entregas WHERE estudiante_id = e.id ORDER BY id DESC LIMIT 1) AS ultima_nota,
       (SELECT creado FROM entregas WHERE estudiante_id = e.id ORDER BY id DESC LIMIT 1) AS ultima_fecha,
       (SELECT MAX(nota) FROM entregas WHERE estudiante_id = e.id) AS mejor_nota,
@@ -82,24 +82,22 @@ const q = {
       (SELECT COUNT(*) FROM intentos WHERE estudiante_id = e.id AND modo = 'comprobar') AS n_comprobar,
       (SELECT COUNT(*) FROM intentos WHERE estudiante_id = e.id AND modo = 'ejecutar') AS n_ejecutar
     FROM estudiantes e LEFT JOIN progreso p ON p.estudiante_id = e.id
-    ORDER BY e.actividad, e.nombre COLLATE NOCASE`),
+    ORDER BY e.actividad, e.apellido COLLATE NOCASE, e.nombre COLLATE NOCASE`),
   borrar: db.prepare('DELETE FROM estudiantes WHERE id = ?'),
 };
 
 export const nuevoToken = () => crypto.randomBytes(24).toString('base64url');
 
 export const Estudiantes = {
-  porDoc: (act, doc) => q.porDoc.get(act, doc),
+  porCorreo: (act, correo) => q.porCorreo.get(act, correo),
   porToken: t => q.porToken.get(t),
   porId: id => q.porId.get(id),
-  crear(act, doc, nombre, pin) {
+  crear(act, correo, nombre, apellido) {
     const ahora = Date.now(), token = nuevoToken();
-    const r = q.crear.run(act, doc, nombre, hashPin(pin), token, ahora, ahora);
+    const r = q.crear.run(act, correo, nombre, apellido, token, ahora, ahora);
     return q.porId.get(Number(r.lastInsertRowid));
   },
   tocar: id => q.tocar.run(Date.now(), id),
-  renombrar: (id, nombre) => q.nombre.run(nombre, id),
-  cambiarPin(id, pin) { q.cambiarPin.run(hashPin(pin), nuevoToken(), id); },
   borrar: id => q.borrar.run(id),
 };
 
@@ -111,6 +109,8 @@ export const Progreso = {
 export const Intentos = {
   registrar: (id, paso, modo, ok, total, ms) => q.intento.run(id, paso, modo, ok ?? null, total ?? null, ms ?? null, Date.now()),
   de: id => q.intentosDe.all(id),
+  /** { idPaso: comprobaciones fallidas } */
+  fallos(id) { const r = {}; for (const f of q.fallos.all(id)) r[f.paso] = f.n; return r; },
 };
 
 export const Entregas = {

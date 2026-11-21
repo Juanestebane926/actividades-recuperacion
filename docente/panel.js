@@ -60,7 +60,7 @@
     const acts = datos.actividades;
     const lista = datos.estudiantes.filter(e =>
       (!filtro.act || e.actividad === filtro.act) &&
-      (!filtro.texto || (e.nombre + ' ' + e.doc).toLowerCase().includes(filtro.texto.toLowerCase())) &&
+      (!filtro.texto || (e.nombre + ' ' + e.correo).toLowerCase().includes(filtro.texto.toLowerCase())) &&
       (!filtro.estado || (filtro.estado === 'aprobado' ? e.ultimaNota >= 3 : filtro.estado === 'reprobado' ? e.ultimaNota != null && e.ultimaNota < 3 : e.ultimaNota == null)));
     const k = orden.col;
     lista.sort((a, b) => {
@@ -87,15 +87,15 @@
         ${tarjeta('Promedio última nota', 'calculator', conNota.length ? (conNota.reduce((s, e) => s + e.ultimaNota, 0) / conNota.length).toFixed(2) : '—')}
       </div>
       <div class="filtros">
-        <input class="input" id="buscar" placeholder="Buscar nombre o documento" value="${esc(filtro.texto)}" aria-label="Buscar">
+        <input class="input" id="buscar" placeholder="Buscar nombre o correo" value="${esc(filtro.texto)}" aria-label="Buscar">
         <select class="select" id="act" aria-label="Curso"><option value="">Todos los cursos</option>${acts.map(a => `<option value="${a.id}" ${filtro.act === a.id ? 'selected' : ''}>${esc(a.curso)}</option>`).join('')}</select>
         <select class="select" id="estado" aria-label="Estado"><option value="">Cualquier estado</option><option value="aprobado" ${filtro.estado === 'aprobado' ? 'selected' : ''}>Aprobados</option><option value="reprobado" ${filtro.estado === 'reprobado' ? 'selected' : ''}>Con nota &lt; 3.0</option><option value="sin" ${filtro.estado === 'sin' ? 'selected' : ''}>Sin calificar</option></select>
         <span class="cuenta">${lista.length} mostrados. Haz clic en una fila para ver el detalle y el código.</span>
       </div>
       <div class="tabla-wrap"><table class="lista">
-        <tr>${th('curso', 'Curso')}${th('nombre', 'Nombre')}${th('doc', 'Documento')}<th>Pasos (pruebas que pasan)</th>${th('ultimaNota', 'Última nota')}${th('mejorNota', 'Mejor')}${th('entregas', 'Calif.')}${th('comprobaciones', 'Comprob.')}${th('ultimo', 'Última actividad')}</tr>
-        ${lista.map(e => `<tr class="fila" data-id="${e.id}"><td>${esc(e.curso)}</td><td>${esc(e.nombre)}</td><td>${esc(e.doc)}</td>
-          <td>${e.pasos.map((p, i) => `<span class="pp ${p ? (p[0] === p[1] ? 'ok' : 'medio') : ''}" title="Paso ${i + 1}${p ? ': ' + p[0] + '/' + p[1] : ': sin comprobar'}">${i + 1}</span>`).join('')}</td>
+        <tr>${th('curso', 'Curso')}${th('nombre', 'Nombre')}${th('correo', 'Correo')}<th>Pasos (pruebas que pasan)</th>${th('ultimaNota', 'Última nota')}${th('mejorNota', 'Mejor')}${th('entregas', 'Calif.')}${th('comprobaciones', 'Comprob.')}${th('ultimo', 'Última actividad')}</tr>
+        ${lista.map(e => `<tr class="fila" data-id="${e.id}"><td>${esc(e.curso)}</td><td>${esc(e.nombre)}</td><td>${esc(e.correo)}</td>
+          <td>${e.pasos.map((p, i) => `<span class="pp ${p ? (p[0] === p[1] ? 'ok' : 'medio') : ''}" title="Paso ${i + 1}${p ? ': ' + p[0] + '/' + p[1] + (p[2] ? ', ' + p[2] + (p[2] === 1 ? ' pista' : ' pistas') : '') : ': sin comprobar'}">${i + 1}${p && p[2] ? '<i class="pp-pista"></i>' : ''}</span>`).join('')}</td>
           <td>${nota(e.ultimaNota)}</td><td>${nota(e.mejorNota)}</td><td>${e.entregas}</td><td>${e.comprobaciones}</td><td>${fecha(e.ultimo)}</td></tr>`).join('') || '<tr><td colspan="9" style="color:var(--suave)">Todavía no hay estudiantes.</td></tr>'}
       </table></div></div>`;
     $('#buscar').oninput = e => { filtro.texto = e.target.value; const p = e.target.selectionStart; pintar(); const b = $('#buscar'); b.focus(); b.setSelectionRange(p, p); };
@@ -123,10 +123,10 @@
     const pintarDet = () => {
       det.innerHTML = `
         <div style="display:flex;gap:10px;align-items:start;flex-wrap:wrap">
-          <div style="flex:1;min-width:0"><h2>${esc(d.nombre)}</h2><div class="suave" style="display:flex;flex-wrap:wrap;gap:2px 16px"><span>${esc(d.curso)}</span><span>Documento ${esc(d.doc)}</span><span>Inició ${fecha(d.creado)}</span><span>Última actividad ${fecha(d.ultimo)}</span></div></div>
+          <div style="flex:1;min-width:0"><h2>${esc(d.nombre)}</h2><div class="suave" style="display:flex;flex-wrap:wrap;gap:2px 16px"><span>${esc(d.curso)}</span><span>${esc(d.correo)}</span><span>Inició ${fecha(d.creado)}</span><span>Última actividad ${fecha(d.ultimo)}</span></div></div>
           <button class="btn" data-variant="ghost" data-size="icon-sm" id="cerrar" title="Cerrar" aria-label="Cerrar">${I('x')}</button></div>
         <h3>Avance por paso (última comprobación)</h3>
-        <div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Pruebas</th></tr>${d.pasos.map((p, i) => { const r = res[p.id]; return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${r ? r.ok + ' / ' + r.total : '—'}</td></tr>`; }).join('')}</table></div>
+        <div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Pruebas</th><th>Pistas abiertas</th></tr>${d.pasos.map((p, i) => { const r = res[p.id]; const k = (d.estado.pistas || {})[p.id] || 0; return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${r ? r.ok + ' / ' + r.total : '—'}</td><td>${k ? k + ' (−' + k * 15 + '%)' : '—'}</td></tr>`; }).join('')}</table></div>
         <h3>Calificaciones (${d.entregas.length})</h3>
         ${d.entregas.length ? `<div class="marco-tabla"><table class="tabla"><tr><th>Fecha</th><th>Nota</th><th>Detalle por paso</th><th></th></tr>${d.entregas.map(e => `<tr><td>${fecha(e.creado)}</td><td>${nota(e.nota)}</td>
           <td style="white-space:normal">${e.detalle.map((x, i) => `${i + 1}: ${x.ok}/${x.total}`).join(' · ')}</td><td><button class="btn" data-variant="outline" data-size="sm" data-recal="${e.id}">${I('refresh-cw')} Re-calificar esta entrega</button></td></tr>`).join('')}</table></div>` : '<p class="suave" style="margin:0">Aún no ha calificado.</p>'}
@@ -136,7 +136,6 @@
         <pre class="codigo">${esc(d.estado.archivos[archivo] || '')}</pre>
         <div class="acciones">
           <button class="btn" data-variant="outline" id="recal-actual">${I('calculator')} Re-calificar el código actual</button>
-          <button class="btn" data-variant="outline" id="pin">${I('key-round')} Restablecer PIN</button>
           <span class="espacio"></span>
           <button class="btn" data-variant="destructive" id="borrar">${I('trash-2')} <span>Borrar estudiante</span></button>
         </div>
@@ -152,11 +151,6 @@
       };
       det.querySelectorAll('[data-recal]').forEach(b => b.onclick = () => recal(+b.dataset.recal));
       $('#recal-actual').onclick = () => recal(null);
-      $('#pin').onclick = async () => {
-        const pin = String(Math.floor(1000 + Math.random() * 9000));
-        await api('POST', `/api/docente/estudiantes/${id}/pin`, { pin });
-        $('#recal').innerHTML = `<div class="aviso azul">${I('key-round')}<div>Nuevo PIN de ${esc(d.nombre)}: <b style="font-size:18px">${pin}</b>. Díselo al estudiante (con su documento ${esc(d.doc)} puede volver a entrar).</div></div>`;
-      };
       $('#borrar').onclick = async () => {
         const b = $('#borrar');
         if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.innerHTML = I('triangle-alert') + ' ¿Seguro? Se borra todo su avance y sus notas. Pulsa otra vez'; return; }

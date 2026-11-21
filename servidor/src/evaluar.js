@@ -4,6 +4,7 @@ import { conTurno, nuevaCarpeta, borrar } from './procesos.js';
 import { correrJava } from './java.js';
 import { comprobarReact, vistaPreviaReact } from './react.js';
 import { revisarJava, revisarReact } from './seguridad.js';
+import { COSTO_PISTA } from './pistas.js';
 
 /** Espacios ____ sin completar en los archivos editables indicados. */
 export function blancos(act, nombres, archivos) {
@@ -58,11 +59,18 @@ async function trabajoJava(act, archivos, pasos, modo, ejecutar, ms) {
   }
 }
 
-/** ▶ Ejecutar o ✔ Comprobar un paso. */
+/**
+ * ▶ Ejecutar o ✔ Comprobar un paso. Los espacios ____ pendientes no detienen la evaluación: el estudiante ve los
+ * errores reales del compilador y, aparte, la lista de espacios que le faltan (pendientes).
+ */
 export async function evaluarPaso(act, paso, archivos, modo, textoPeticiones) {
-  const t0 = Date.now();
+  const r = await evaluarSinAvisos(act, paso, archivos, modo, textoPeticiones);
   const b = blancos(act, paso.compilar, archivos);
-  if (b.length) return { blancos: b };
+  return b.length ? { ...r, pendientes: b } : r;
+}
+
+async function evaluarSinAvisos(act, paso, archivos, modo, textoPeticiones) {
+  const t0 = Date.now();
   const seg = act.motor.tipo === 'java' ? revisarJava(archivos) : revisarReact(subconjunto(archivos, paso.compilar));
   if (seg.length) return { errores: seg };
 
@@ -103,8 +111,11 @@ export async function evaluarPaso(act, paso, archivos, modo, textoPeticiones) {
   return { errores: p.errores || [], pruebas: p.pruebas || [], consola: r.consola, ms: Date.now() - t0 };
 }
 
-/** 🏁 Calificar toda la actividad: corre todas las pruebas de todos los pasos. */
-export async function calificar(act, archivos) {
+/**
+ * 🏁 Calificar toda la actividad: corre todas las pruebas de todos los pasos.
+ * pistas = { idPaso: pistas abiertas }: cada una resta COSTO_PISTA del valor de su paso.
+ */
+export async function calificar(act, archivos, pistas = {}) {
   const porPaso = {};
   const evaluables = [];
   for (const p of act.pasos) {
@@ -137,11 +148,16 @@ export async function calificar(act, archivos) {
     }
   }
   let suma = 0;
+  const valorPaso = 5 / act.pasos.length;
   const detalle = act.pasos.map(p => {
     const x = porPaso[p.id];
-    suma += x.total ? x.ok / x.total : 0;
-    return { paso: p.id, titulo: p.titulo, ok: x.ok, total: x.total, nota: x.nota || '', pruebas: x.pruebas || [] };
+    const usadas = Math.max(0, Number(pistas[p.id]) || 0);
+    const factor = Math.max(0, 1 - COSTO_PISTA * usadas);
+    const aporte = valorPaso * (x.total ? x.ok / x.total : 0) * factor;
+    suma += aporte;
+    return { paso: p.id, titulo: p.titulo, ok: x.ok, total: x.total, nota: x.nota || '', pruebas: x.pruebas || [],
+      pistas: usadas, aporte: Math.round(aporte * 100) / 100 };
   });
-  const nota = Math.round((5 * suma / act.pasos.length) * 10) / 10;
+  const nota = Math.round(suma * 10) / 10;
   return { nota, detalle };
 }

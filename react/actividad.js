@@ -45,10 +45,6 @@ const info = \`\${nombre} tiene \${edad} años\`;   // "Juan tiene 20 años"</co
             <li><code>Perfil</code>: arma el texto <i>Ana tiene 18 años</i> con un template literal.</li>
           </ol>
           <p>Pulsa <b>Ejecutar</b> para ver la vista previa y <b>Comprobar</b> para revisar.</p>`,
-        pistas: [
-          'En los dos espacios de Saludo va la misma palabra: <code>nombre</code>.',
-          'Dentro de las comillas invertidas del template literal escribe: <code>${nombre} tiene ${edad} años</code>'
-        ]
       },
       {
         id: 'r2',
@@ -74,10 +70,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>Si aprobó, la clase es <code>badge badge-ok</code>.</li>
             <li>Muestra <code>Aprobado</code> o <code>Reprobado</code> con un ternario.</li>
           </ol>`,
-        pistas: [
-          '<code>const aprobado = nota &gt;= 3.0;</code>',
-          'El texto: <code>{aprobado ? \'Aprobado\' : \'Reprobado\'}</code>'
-        ]
       },
       {
         id: 'r3',
@@ -105,10 +97,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>Usa <code>est.id</code> como <code>key</code>.</li>
             <li>Pásale a <code>EstadoBadge</code> la nota del estudiante.</li>
           </ol>`,
-        pistas: [
-          'El tamaño vacío es <code>0</code>. El método para recorrer y transformar es <code>map</code>.',
-          'La key: <code>key={est.id}</code>. La nota: <code>nota={est.nota}</code>'
-        ]
       },
       {
         id: 'r4',
@@ -135,10 +123,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>Usa <code>filter</code> para quedarte con los aprobados.</li>
             <li>El botón invierte el valor de <code>soloAprobados</code>.</li>
           </ol>`,
-        pistas: [
-          '<code>useState(false)</code> y <code>estudiantes.filter(...)</code>',
-          'En el onClick: <code>setSoloAprobados(!soloAprobados)</code>'
-        ]
       },
       {
         id: 'r5',
@@ -169,11 +153,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>Completa los dos <code>onChange</code>.</li>
           </ol>
           <p>Con <b>Ejecutar</b> puedes escribir en el formulario de la vista previa y ver en la consola lo que recibe <code>onAgregar</code>.</p>`,
-        pistas: [
-          '<code>e.preventDefault();</code> y <code>nota: Number(nota)</code>',
-          'Para limpiar: <code>setNota(\'\')</code> (comillas vacías).',
-          'Los onChange: <code>setNombre(e.target.value)</code> y <code>setNota(e.target.value)</code>'
-        ]
       },
       {
         id: 'r6',
@@ -201,11 +180,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>Pásale <code>agregar</code> al formulario por la prop <code>onAgregar</code>.</li>
           </ol>
           <p>Usa <b>Ejecutar</b> para probar tu app completa: agrega un estudiante y filtra. Cuando este paso pase, ve a <b>Nota</b>.</p>`,
-        pistas: [
-          '<code>useState(INICIALES)</code> y <code>[estudiantes]</code> como dependencias.',
-          '<code>setEstudiantes([...estudiantes, conId]);</code>',
-          '<code>&lt;FormularioEstudiante onAgregar={agregar} /&gt;</code> (sin paréntesis: pasas la función, no la llamas).'
-        ]
       }
     ]
   };

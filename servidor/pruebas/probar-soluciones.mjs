@@ -31,13 +31,13 @@ for (const [id, dir] of Object.entries(carpetas)) {
   const A = cargarActividad(id);
   const sol = {};
   for (const f of fs.readdirSync(path.join(SOL, dir))) sol[f] = fs.readFileSync(path.join(SOL, dir, f), 'utf8');
-  const doc = 'prueba' + Date.now().toString().slice(-6);
-  const { d: s } = await api('POST', '/api/sesion', { actividad: id, nombre: 'Estudiante De Prueba', doc, pin: '1234' });
-  console.log(`\n=== ${A.curso} (${doc})`);
+  const correo = 'prueba' + Date.now().toString().slice(-6) + '@ejemplo.com';
+  const { d: s } = await api('POST', '/api/sesion', { actividad: id, nombre: 'Estudiante', apellido: 'De Prueba', correo });
+  console.log(`\n=== ${A.curso} (${correo})`);
   // Con el código inicial deben aparecer los ____ pendientes
   const ini = await api('POST', '/api/evaluar', { paso: A.pasos[0].id, modo: 'comprobar', archivos: {} }, s.token);
-  console.log(ini.d.blancos ? `  inicial: ${ini.d.blancos.length} espacios ____ detectados ✔` : '  ✘ el código inicial no mostró espacios ____');
-  if (!ini.d.blancos) fallos++;
+  console.log(ini.d.pendientes ? `  inicial: ${ini.d.pendientes.length} espacios ____ detectados ✔` : '  ✘ el código inicial no mostró espacios ____');
+  if (!ini.d.pendientes) fallos++;
   for (const p of A.pasos) {
     const archivos = {};
     for (const n of p.compilar) if (sol[n]) archivos[n] = sol[n];
@@ -64,7 +64,7 @@ for (const [id, dir] of Object.entries(carpetas)) {
     const { d: ent } = await api('POST', '/api/docente/entrar', { clave: CLAVE });
     const cookie = ent.token;
     const { d: lista } = await api('GET', '/api/docente/estudiantes', null, null, cookie);
-    const yo = lista.estudiantes.find(x => x.doc === doc);
+    const yo = lista.estudiantes.find(x => x.correo === correo);
     console.log(`  panel docente: ${yo ? 'aparece con última nota ' + yo.ultimaNota : '✘ no aparece'}`);
     if (yo) await api('DELETE', '/api/docente/estudiantes/' + yo.id, null, null, cookie);
   }

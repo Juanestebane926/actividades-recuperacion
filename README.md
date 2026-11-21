@@ -1,6 +1,6 @@
 # Actividades de recuperación (Spring Boot, React, Java Web)
 
-Son actividades paso a paso, al estilo DataCamp, para los estudiantes que perdieron la materia. El estudiante abre un enlace, entra con su documento y un PIN, y escribe el código en el navegador.
+Son actividades paso a paso, al estilo DataCamp, para los estudiantes que perdieron la materia. El estudiante abre un enlace, entra con su nombre, su apellido y su correo, y escribe el código en el navegador.
 
 **El código se ejecuta de verdad en el servidor del curso.** Los errores que ve el estudiante son los reales de `javac`, Spring Boot, Tomcat, esbuild o React. Las pruebas también son reales: JUnit 5 y React Testing Library. Nada se simula.
 
@@ -20,9 +20,10 @@ Por ejemplo, estos son mensajes que ve un estudiante:
 
 ## Para el estudiante
 
-1. Abre el enlace del curso y entra con su documento, su nombre y un PIN de 4 a 8 números que elige.
-2. En cada paso lee la explicación y completa los `____`. Usa **▶ Ejecutar** para ver qué hace el código y **✔ Comprobar** para correr las pruebas. Hay pistas en cada paso.
-3. Su avance se guarda en el servidor. Puede seguir desde otro computador con el mismo documento y PIN.
+1. Abre el enlace del curso y entra con su nombre, su apellido y su correo. La primera vez ve una guía corta de cómo usar la plataforma.
+2. En cada paso lee la explicación y completa los `____`. Usa **▶ Ejecutar** para ver qué hace el código y **✔ Comprobar** para correr las pruebas. Si quedan `____`, igual se compila y se muestran los errores reales, con la lista de espacios pendientes.
+   - **Pistas:** orientan sin dar la respuesta. La pista *n* se desbloquea después de 2·*n* comprobaciones fallidas del paso y cada una que se abre resta el 15% del valor de ese paso. Las entrega el servidor (`servidor/src/pistas.js`), así que no aparecen en el código de la página.
+3. Su avance se guarda en el servidor. Puede seguir desde otro computador entrando con el mismo correo.
 4. En **🏁 Nota** pulsa *Calificar*. La nota queda registrada para el docente, así que no hay comprobantes que enviar.
 
 La navegación (‹ Anterior, los pasos, Siguiente ›) va en la barra superior. El editor, los botones y el resultado caben en la pantalla de un portátil de 1366×768.
@@ -35,7 +36,6 @@ La navegación (‹ Anterior, los pasos, Siguiente ›) va en la barra superior.
 - En el detalle de un estudiante puede:
   - leer su código;
   - **re-calificar** su código actual o cualquier entrega;
-  - **restablecer el PIN** si el estudiante lo olvida;
   - borrar al estudiante.
 - **⬇ Descargar notas** genera un CSV que se abre en Excel.
 
@@ -111,7 +111,7 @@ El código de los estudiantes corre en el servidor. Hay varias capas de protecci
 - **Revisión previa:** se rechaza el código que use archivos, red, procesos, hilos, reflexión, `System.exit`, `require`, `fetch`, etc. Las actividades no los necesitan.
 - **Un proceso nuevo por evaluación:** con límite de tiempo (ciclos infinitos) y de memoria. Ningún estudiante comparte JVM ni carpeta con otro.
 - **En Docker, usuario sin privilegios:** el código corre con un usuario que no puede leer ni escribir la base de datos. React corre además con el modelo de permisos de Node: sin escritura y sin procesos hijos.
-- **PIN:** se guarda con scrypt. Hay bloqueo temporal tras varios intentos fallidos.
+- **Entrada del estudiante:** solo con el correo, sin contraseña (son pocos estudiantes). Quien conozca el correo de otro estudiante podría entrar a su actividad. La clave del panel docente sí tiene bloqueo temporal tras varios intentos fallidos.
 
 Las pruebas (`evaluador-java/pruebas`, `servidor/react/pruebas`) solo existen en el servidor: la página no las envía al navegador. Pero **si este repositorio sigue siendo público en GitHub, se pueden leer ahí**. No contienen las soluciones, solo los resultados esperados. Si quieres ocultarlas del todo, haz el repositorio privado: el servidor no lo necesita público.
 
@@ -119,7 +119,7 @@ Las pruebas (`evaluador-java/pruebas`, `servidor/react/pruebas`) solo existen en
 
 ```
 index.html, assets/          portada, motor de la interfaz (motor.js) y estilos
-spring-boot/ react/ java-web/  actividad.js (explicaciones, pasos, pistas) + codigo/ (código inicial)
+spring-boot/ react/ java-web/  actividad.js (explicaciones y pasos) + codigo/ (código inicial)
 docente/                     panel del docente
 servidor/                    servidor Node: API, SQLite, cola de evaluación, evaluador React
   react/pruebas/             pruebas de React (Testing Library)
@@ -132,7 +132,7 @@ Dockerfile
 
 ## Cómo modificar una actividad
 
-- **Textos, pasos, pistas y peticiones de ejemplo:** `*/actividad.js`. El código inicial está en `*/codigo/`.
+- **Textos, pasos y peticiones de ejemplo:** `*/actividad.js`. El código inicial está en `*/codigo/`. Las pistas están en `servidor/src/pistas.js`.
 - **Pruebas Java:** `evaluador-java/pruebas/<actividad>/<PASO>Test.java`. Son JUnit 5 normales y usan `AppSpring`, `ServidorWeb` y `Http` de `evaluador-java/soporte-*`. Si cambias el soporte, vuelve a correr `build.sh`.
 - **Pruebas React:** `servidor/react/pruebas/<paso>.test.jsx`, con Testing Library y la misma sintaxis de Vitest/Jest.
 - Si cambias la cantidad de pruebas de un paso, actualiza `nPruebas` en `actividad.js`.

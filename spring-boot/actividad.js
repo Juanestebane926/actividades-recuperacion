@@ -53,11 +53,6 @@ public class SaludoController {
           <li>Haz que devuelva exactamente <code>"Hola desde Spring Boot"</code> (con comillas, es un String).</li>
         </ol>
         <p>Luego pulsa <b>Ejecutar</b>: tu aplicación arranca de verdad y verás la respuesta a <code>GET /api/hola</code>. Después pulsa <b>Comprobar</b>.</p>`,
-      pistas: [
-        'Las anotaciones se escriben con <code>@</code> y el nombre exacto, respetando mayúsculas: <code>@RestController</code>, <code>@GetMapping</code>.',
-        'En <code>@RequestMapping("____")</code> el texto va entre las comillas que ya están: queda <code>@RequestMapping("/api")</code>.',
-        'El return debe ser un texto entre comillas dobles: <code>return "Hola desde Spring Boot";</code>'
-      ]
     },
     {
       id: 'p2',
@@ -88,11 +83,6 @@ public String buscar(@RequestParam(defaultValue = "todos") String filtro) {
           <li>Devuelve un <code>new SaludoResponse(...)</code> con el texto <code>"Hola, " + nombre</code>.</li>
         </ol>
         <p>Resultado esperado: <code>/api/saludo?nombre=Ana</code> → <code>{"mensaje":"Hola, Ana"}</code> y <code>/api/saludo</code> → <code>{"mensaje":"Hola, invitado"}</code>.</p>`,
-      pistas: [
-        'La anotación completa queda: <code>@RequestParam(defaultValue = "invitado") String nombre</code>.',
-        'Para crear el objeto se usa <code>new</code> y el constructor de la clase: <code>new SaludoResponse(texto)</code>.',
-        'Ojo con el espacio después de la coma: <code>return new SaludoResponse("Hola, " + nombre);</code>'
-      ]
     },
     {
       id: 'p3',
@@ -123,11 +113,6 @@ return null;                      // la recorrí toda y no estaba</code></pre>
           <li><code>crear(nueva)</code>: agrega <code>nueva</code> a la lista <code>vacantes</code>.</li>
         </ol>
         <p>No toques todavía los métodos del <b>Paso 6</b>.</p>`,
-      pistas: [
-        '<code>listar()</code> es una sola palabra: <code>return vacantes;</code>',
-        'En <code>buscarPorId</code>: <code>if (v.getId().equals(id))</code> y adentro <code>return v;</code>',
-        'En <code>crear</code>, el espacio en blanco es la instrucción <code>vacantes.add(nueva);</code>'
-      ]
     },
     {
       id: 'p4',
@@ -162,11 +147,6 @@ public ... buscarPorId(@PathVariable Long id) { ... }</code></pre>
           <li><code>listar()</code>: devuelve lo que entrega <code>vacanteService.listar()</code>.</li>
           <li><code>buscarPorId</code>: usa <code>@PathVariable</code>; si no existe responde <b>404</b> con <code>notFound()</code>; si existe, <b>200</b> con la vacante.</li>
         </ol>`,
-      pistas: [
-        'En el constructor: <code>this.vacanteService = vacanteService;</code> (el parámetro tiene el mismo nombre que el atributo).',
-        'En <code>listar()</code> el controller delega: <code>return vacanteService.listar();</code>',
-        'Los espacios de <code>buscarPorId</code> son: <code>@PathVariable</code>, <code>notFound</code> y <code>vacante</code>.'
-      ]
     },
     {
       id: 'p5',
@@ -198,11 +178,6 @@ Content-Type: application/json
 Vacante creada = vacanteService.____(vacante);
 return ResponseEntity.status(HttpStatus.____).body(creada);</code></pre>
         <p>Pruébalo con <b>Ejecutar</b>: verás un POST válido (201) y uno con título vacío (400).</p>`,
-      pistas: [
-        'Para saber si un String quedó vacío: <code>.isEmpty()</code>.',
-        'El método del service que guarda es <code>crear</code>: <code>vacanteService.crear(vacante)</code>.',
-        'El estado 201 en Spring se llama <code>HttpStatus.CREATED</code>. El mensaje de error debe ser exactamente <code>El título es obligatorio</code> (con tilde).'
-      ]
     },
     {
       id: 'p6',
@@ -238,12 +213,6 @@ public ResponseEntity&lt;Void&gt; eliminar(@PathVariable Long id) {
           <li>Agrega el endpoint <code>DELETE /api/vacantes/{id}</code> (204 o 404).</li>
         </ol>
         <p>Cuando este paso pase, ve a <b>Nota</b> para calificar toda la actividad.</p>`,
-      pistas: [
-        '<code>eliminar</code> en el service: <code>Vacante v = buscarPorId(id); if (v == null) { return false; } vacantes.remove(v); return true;</code>',
-        'La firma de listar queda: <code>public List&lt;Vacante&gt; listar(@RequestParam(required = false) String empresa)</code>.',
-        'Dentro de listar: <code>if (empresa != null) { return vacanteService.buscarPorEmpresa(empresa); } return vacanteService.listar();</code>',
-        'El DELETE va dentro de la clase (antes de la última llave <code>}</code>). Copia el ejemplo de la explicación.'
-      ]
     }
   ]
 };

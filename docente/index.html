@@ -11,7 +11,7 @@
 <link rel="preload" href="../assets/fuentes/atkinson-next.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fuentes/atkinson-mono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../assets/vendor/basecoat-1.1.0.min.css">
-<link rel="stylesheet" href="../assets/motor.css?v=34">
+<link rel="stylesheet" href="../assets/motor.css?v=36">
 <style>
   .tablero { max-width: 1400px; margin: 0 auto; padding: 20px 20px 40px; }
   .cab-panel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px 0; }
@@ -35,6 +35,8 @@
   .pp { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 600; margin-right: 3px; border: 1px solid var(--border); color: var(--muted-foreground); }
   .pp.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
   .pp.medio { background: var(--mal-bg); color: var(--mal); border-color: var(--mal-borde); }
+  .pp { position: relative; }
+  .pp-pista { position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; border-radius: 50%; background: #ffd43b; box-shadow: 0 0 0 1.5px var(--card); }
   .nota { font-weight: 700; font-variant-numeric: tabular-nums; }
   .nota.ap { color: var(--ok); } .nota.rep { color: var(--mal); }
   dialog#dialogo { border: 1px solid var(--border); border-radius: 12px; padding: 0; width: min(1150px, 96vw); max-height: 92vh; background: var(--card); color: var(--foreground); margin: auto; box-shadow: 0 10px 40px rgba(0, 0, 0, .25); }
@@ -51,8 +53,8 @@
 <body>
 <div id="app"></div>
 <dialog id="dialogo"><div class="det" id="detalle"></div></dialog>
-<script defer src="../assets/config.js?v=34"></script>
-<script defer src="../assets/iconos.js?v=34"></script>
-<script defer src="panel.js?v=34"></script>
+<script defer src="../assets/config.js?v=36"></script>
+<script defer src="../assets/iconos.js?v=36"></script>
+<script defer src="panel.js?v=36"></script>
 </body>
 </html>

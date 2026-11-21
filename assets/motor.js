@@ -19,6 +19,7 @@
   let app = null;
 
   let token = null, estudiante = null, estado = null, entregas = [];
+  let pistasInfo = {};   // por paso: { total, abiertas: [textos], fallos, requiere: [intentos por pista], costo }
   let originales = {};
   let editor = null, archivoActual = null, ocupado = false, pasoActual = null;
   let cambios = {}, timerGuardar = null, guardando = false;
@@ -62,7 +63,7 @@
   async function enviarCambios() {
     if (guardando) { guardar(); return; }
     guardando = true;
-    const enviar = { paso: estado.paso, pistas: estado.pistas, peticiones: estado.peticiones };
+    const enviar = { paso: estado.paso, peticiones: estado.peticiones };
     if (Object.keys(cambios).length) enviar.archivos = cambios;
     const enviados = cambios;
     cambios = {};
@@ -104,12 +105,13 @@
   }
 
   function entrar(d) {
-    estudiante = { nombre: d.nombre, doc: d.doc };
+    estudiante = { nombre: d.nombre, correo: d.correo };
     estado = d.estado;
     estado.peticiones = estado.peticiones || {};
     estado.pistas = estado.pistas || {};
     estado.res = estado.res || {};
     entregas = d.entregas || [];
+    pistasInfo = d.pistas || {};
     for (const n in originales) if (!(n in estado.archivos)) estado.archivos[n] = originales[n];
     mostrarTrabajo();
   }
@@ -132,14 +134,14 @@
               <div class="temas">${temas}</div>
             </div>
             <div class="card entrar">
-              <header><h2>Entrar a la actividad</h2><p>La primera vez escribe tus datos y <b>elige un PIN</b> de 4 a 8 números. Para continuar después, en este u otro computador, usa el <b>mismo documento y PIN</b>.</p></header>
+              <header><h2>Entrar a la actividad</h2><p>Escribe tu nombre, tu apellido y tu correo. Para seguir después, en este u otro computador, entra con el <b>mismo correo</b>.</p></header>
               <section>
                 <form id="form-entrar" class="form">
                   <div class="fila">
-                    <div class="field"><label for="doc">Documento</label><input class="input" id="doc" autocomplete="username" placeholder="1012345678" required></div>
-                    <div class="field"><label for="pin">PIN</label><input class="input" id="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="4 a 8 números" required></div>
+                    <div class="field"><label for="nombre">Nombre</label><input class="input" id="nombre" autocomplete="given-name" placeholder="Ana María" required></div>
+                    <div class="field"><label for="apellido">Apellido</label><input class="input" id="apellido" autocomplete="family-name" placeholder="Pérez" required></div>
                   </div>
-                  <div class="field"><label for="nombre">Nombre completo</label><input class="input" id="nombre" autocomplete="name" placeholder="Ana María Pérez"><small>Solo se pide la primera vez.</small></div>
+                  <div class="field"><label for="correo">Correo</label><input class="input" id="correo" type="email" autocomplete="email" placeholder="ana.perez@gmail.com" required></div>
                   <div id="error-datos" class="aviso mal ${error ? '' : 'oculto'}">${I('circle-x')}<div>${esc(error || '')}</div></div>
                   <button class="btn" id="empezar" type="submit" style="width:100%">Entrar ${I('arrow-right')}</button>
                 </form>
@@ -155,7 +157,7 @@
             <ol class="pasos-como">
               <li><div>Cada paso trae una <b>explicación</b> y un <b>código para completar</b>. Los espacios <code>____</code> son los que debes llenar.</div></li>
               <li><div><b>Ejecutar</b> corre tu código de verdad y te muestra lo que hace. <b>Comprobar</b> corre las pruebas automáticas y te dice qué falla, con los mensajes reales del compilador y del framework.</div></li>
-              <li><div>Si te atascas, abre las <b>pistas</b>. Puedes intentarlo cuantas veces quieras.</div></li>
+              <li><div>Puedes intentarlo cuantas veces quieras. Si te atascas, se desbloquean <b>pistas</b> después de varios intentos con Comprobar; cada pista que abras resta el 15% de la nota de ese paso.</div></li>
               <li><div>Al final, en <b>Nota</b>, se califica todo tu código y la nota <b>queda registrada para tu profesor</b> automáticamente.</div></li>
             </ol>
           </section>
@@ -168,7 +170,7 @@
       const b = $('#empezar');
       b.disabled = true;
       try {
-        const d = await api('POST', '/api/sesion', { actividad: A.id, nombre: $('#nombre').value, doc: $('#doc').value, pin: $('#pin').value });
+        const d = await api('POST', '/api/sesion', { actividad: A.id, nombre: $('#nombre').value, apellido: $('#apellido').value, correo: $('#correo').value });
         token = d.token;
         try { localStorage.setItem(CLAVE_TOKEN, token); } catch (x) { }
         entrar(d);
@@ -190,7 +192,7 @@
 
   // ------------------------------------------------------------------ estructura
   function mostrarTrabajo() {
-    const iniciales = String(estudiante.nombre || estudiante.doc || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+    const iniciales = String(estudiante.nombre || estudiante.correo || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
     app.innerHTML = `
       <header class="barra">
         <div class="marca">${LOGO()}<span class="txt">${esc(A.curso)}<small>Recuperación</small></span></div>
@@ -214,7 +216,7 @@
           <div class="usuario">
             <button class="avatar" id="avatar" aria-haspopup="menu" aria-expanded="false" title="${esc(estudiante.nombre)}">${esc(iniciales)}</button>
             <div class="menu-usuario" id="menu-usuario" role="menu" hidden>
-              <div class="quien"><span class="avatar grande">${esc(iniciales)}</span><div><b>${esc(estudiante.nombre)}</b><small>Documento ${esc(estudiante.doc)}</small></div></div>
+              <div class="quien"><span class="avatar grande">${esc(iniciales)}</span><div><b>${esc(estudiante.nombre)}</b><small>${esc(estudiante.correo)}</small></div></div>
               <button class="item" id="salir" role="menuitem">${I('log-out')} Salir de este computador</button>
             </div>
           </div>
@@ -259,7 +261,7 @@
     const total = A.pasos.length;
     const estadoDe = i => {
       const r = estado.res[A.pasos[i].id];
-      return { r, clase: !r ? 'pendiente' : (r.total && r.ok === r.total ? 'hecho' : 'fallo') };
+      return { r, clase: !r ? 'pendiente' : (r.total && r.ok === r.total && !r.pendientes ? 'hecho' : 'fallo') };
     };
     const completos = A.pasos.filter((p, i) => estadoDe(i).clase === 'hecho').length;
     const enNota = estado.paso >= total;
@@ -323,8 +325,6 @@
 
   function vistaPaso(paso, i) {
     pasoActual = paso;
-    const pistasVistas = estado.pistas[paso.id] || 0;
-    const pistas = (paso.pistas || []).map((p, k) => `<details ${k < pistasVistas ? 'open' : ''} data-k="${k}"><summary>${I('chevron-right')}Pista ${k + 1}</summary><div>${p}</div></details>`).join('');
     $('#vista').innerHTML = `
       <div class="trabajo" id="trabajo">
         <section class="panel explicacion">
@@ -335,7 +335,7 @@
           <div class="contenido prosa">
             ${paso.explicacion}
             <div class="tarea"><h3>${I('target')} Tu tarea</h3>${paso.tarea}</div>
-            ${pistas ? '<h3 class="titulo-pistas">' + I('lightbulb') + ' ¿Te atascaste?</h3><div class="pistas">' + pistas + '</div>' : ''}
+            <div id="pistas-paso"></div>
           </div>
         </section>
         <div class="divisor v" id="div-v" title="Arrastra para cambiar el ancho" role="separator" aria-orientation="vertical"></div>
@@ -360,9 +360,7 @@
           </div>
         </section>
       </div>`;
-    $('#vista').querySelectorAll('.pistas details').forEach(d => d.addEventListener('toggle', () => {
-      if (d.open) { estado.pistas[paso.id] = Math.max(estado.pistas[paso.id] || 0, +d.dataset.k + 1); guardar(); }
-    }));
+    pintarPistas(paso);
     crearEditor(paso);
     $('#ejecutar').onclick = () => evaluar(paso, 'ejecutar');
     $('#comprobar').onclick = () => evaluar(paso, 'comprobar');
@@ -375,6 +373,67 @@
     };
     activarDivisores();
     $('#reiniciar').onclick = () => reiniciarArchivo(paso);
+  }
+
+  // ------------------------------------------------------------------ pistas
+  // Se desbloquean con comprobaciones fallidas y las entrega el servidor; cada una resta parte de la nota del paso.
+  const numero = x => x.toLocaleString('es-CO', { maximumFractionDigits: 2 });
+
+  function pintarPistas(paso) {
+    const cont = $('#pistas-paso');
+    const info = pistasInfo[paso.id];
+    if (!cont || !info || !info.total) { if (cont) cont.innerHTML = ''; return; }
+    const costoPct = Math.round(info.costo * 100);
+    const costoNota = numero(5 / A.pasos.length * info.costo);
+    const items = [];
+    for (let k = 1; k <= info.total; k++) {
+      const requiere = info.requiere[k - 1];
+      if (k <= info.abiertas.length) {
+        items.push(`<div class="pista abierta"><div class="pista-cab">${I('lightbulb')}<b>Pista ${k}</b><span class="pista-costo">−${costoPct}% de este paso</span></div><div class="pista-texto">${info.abiertas[k - 1]}</div></div>`);
+      } else if (k === info.abiertas.length + 1 && info.fallos >= requiere) {
+        items.push(`<button class="pista disponible" data-k="${k}">${I('lightbulb')}<span><b>Ver la pista ${k}</b><small>Resta el ${costoPct}% de este paso (${costoNota} de tu nota)</small></span></button>`);
+      } else {
+        const falta = Math.max(0, requiere - info.fallos);
+        const motivo = falta
+          ? `Se desbloquea después de ${requiere} intentos con Comprobar. ${falta === 1 ? 'Falta 1' : 'Faltan ' + falta}.`
+          : `Primero abre la pista ${k - 1}.`;
+        items.push(`<div class="pista bloqueada">${I('lock')}<span><b>Pista ${k}</b><small>${motivo}</small></span></div>`);
+      }
+    }
+    cont.innerHTML = `<h3 class="titulo-pistas">${I('lightbulb')} ¿Te atascaste?</h3>
+      <p class="pistas-regla">Las pistas no dan la respuesta: te orientan. Se desbloquean a medida que intentas con <b>Comprobar</b>, y cada una que abras resta el ${costoPct}% de la nota de este paso.</p>
+      <div class="pistas">${items.join('')}</div>`;
+    const b = cont.querySelector('.pista.disponible');
+    if (b) b.onclick = () => abrirPista(paso, +b.dataset.k, b);
+  }
+
+  /** Primer clic: pide confirmar (la pista cuesta nota). Segundo clic: la pide al servidor. */
+  async function abrirPista(paso, k, b) {
+    if (b.dataset.confirmar !== '1') {
+      b.dataset.confirmar = '1';
+      b.classList.add('confirmar');
+      b.querySelector('span').innerHTML = `<b>¿Abrir la pista ${k}?</b><small>Pulsa otra vez para confirmar. Restará el ${Math.round(pistasInfo[paso.id].costo * 100)}% de este paso.</small>`;
+      setTimeout(() => { if (b.isConnected && b.dataset.confirmar === '1') pintarPistas(paso); }, 5000);
+      return;
+    }
+    b.disabled = true;
+    try {
+      const r = await api('POST', '/api/pista', { paso: paso.id, n: k });
+      pistasInfo[paso.id] = r.pistas;
+      estado.pistas[paso.id] = r.pistas.abiertas.length;
+    } catch (e) {
+      if (e.status === 401) { salir(); return; }
+      b.insertAdjacentHTML('afterend', aviso('mal', 'circle-x', esc(e.message)));
+      b.disabled = false;
+      return;
+    }
+    if (pasoActual === paso) pintarPistas(paso);
+  }
+
+  /** Cuántas pistas se pueden abrir ahora mismo (para avisar cuando se desbloquea una). */
+  function pistasDisponibles(info) {
+    if (!info) return 0;
+    return info.requiere.filter((r, i) => i >= info.abiertas.length && info.fallos >= r).length;
   }
 
   // ------------------------------------------------------------------ tamaño de los paneles (divisores que se arrastran)
@@ -457,6 +516,7 @@
     estado.archivos[archivoActual] = originales[archivoActual];
     cambios[archivoActual] = originales[archivoActual];
     editor.setValue(originales[archivoActual]);
+    marcarPestanas();
     guardar();
   }
 
@@ -492,7 +552,7 @@
       estado.archivos[archivoActual] = editor.getValue();
       cambios[archivoActual] = estado.archivos[archivoActual];
       guardar();
-      clearTimeout(t); t = setTimeout(marcarBlancos, 300);
+      clearTimeout(t); t = setTimeout(() => { marcarBlancos(); marcarPestanas(); }, 300);
       if (marcaError) { editor.removeLineClass(marcaError, 'background', 'cm-linea-error'); marcaError = null; }
     });
     const abrir = n => {
@@ -514,11 +574,12 @@
     if (window.Sugerencias) Sugerencias.activar(editor, { A, archivos: () => estado.archivos, actual: () => archivoActual });
     const nombres = paso.archivos.slice();
     const logoArchivo = window.Logo ? window.Logo(A.id) : I('file-code');
-    let h = nombres.map(n => `<button data-n="${esc(n)}"${A.archivos[n].soloLectura ? ' title="Solo lectura: no hace falta cambiarlo"' : ''}>${logoArchivo}${esc(n)}${A.archivos[n].soloLectura ? I('lock', 'candado') : ''}</button>`).join('');
+    let h = nombres.map(n => `<button data-n="${esc(n)}"${A.archivos[n].soloLectura ? ' title="Solo lectura: no hace falta cambiarlo"' : ''}>${logoArchivo}${esc(n)}${A.archivos[n].soloLectura ? I('lock', 'candado') : '<span class="punto" title="Tiene espacios ____ por completar"></span>'}</button>`).join('');
     if (tienePeticiones(paso)) h += `<span class="separa"></span><button data-n="${HTTP}" class="http" title="Prueba tu API como en Thunder Client">${I('globe')} Probar la API</button>`;
     tabs.innerHTML = h;
     tabs.querySelectorAll('button').forEach(b => b.onclick = () => abrir(b.dataset.n));
     abrir(nombres.find(n => !A.archivos[n].soloLectura) || nombres[0]);
+    marcarPestanas();
     crearEditor.abrir = abrir;
     setTimeout(() => editor.refresh(), 50);
   }
@@ -584,7 +645,15 @@
     reloj = setInterval(pintar, 1000);
   }
 
-  /** Espacios ____ sin completar (revisión rápida antes de ir al servidor). */
+  /** Punto amarillo en cada pestaña cuyo archivo todavía tiene espacios ____. */
+  function marcarPestanas() {
+    document.querySelectorAll('#pestanas button[data-n]').forEach(b => {
+      const n = b.dataset.n;
+      b.classList.toggle('pendiente', n !== HTTP && blancos([n]).length > 0);
+    });
+  }
+
+  /** Espacios ____ sin completar en los archivos indicados. */
   function blancos(nombres) {
     const r = [];
     nombres.forEach(n => {
@@ -599,8 +668,6 @@
     ocupado = true;
     ['#ejecutar', '#comprobar', '#reiniciar'].forEach(s => { const b = $(s); if (b) b.disabled = true; });
     try {
-      const b = blancos(paso.compilar);
-      if (b.length) { pintarResultado({ blancos: b }, modo); return; }
       setCargando(modo === 'ejecutar'
         ? (A.motor === 'java' ? (tienePeticiones(paso) ? 'Compilando y arrancando tu aplicación…' : 'Compilando y ejecutando…') : 'Armando tu app…')
         : 'Compilando y corriendo las pruebas…');
@@ -612,6 +679,12 @@
       const res = await api('POST', '/api/evaluar', cuerpo);
       marcarGuardado('Guardado');
       if (res.progreso) { estado.res = res.progreso; pintarProgreso(); }
+      if (res.pistas) {
+        const antes = pistasDisponibles(pistasInfo[paso.id]);
+        pistasInfo[paso.id] = res.pistas;
+        if (pistasDisponibles(res.pistas) > antes) res.pistaNueva = true;
+        if (pasoActual === paso) pintarPistas(paso);
+      }
       if (pasoActual === paso) pintarResultado(res, modo);
     } catch (e) {
       if (e.status === 401) { salir(); return; }
@@ -659,15 +732,15 @@
   ];
   function traducir(m) { for (const [re, t] of TRAD) if (re.test(m)) return t; return ''; }
 
-  function enlace(archivo, linea) {
+  function enlace(archivo, linea, texto) {
     if (!archivo) return '';
-    return `<a href="#" data-a="${esc(archivo)}" data-l="${linea || 1}">${esc(archivo)}${linea ? ', línea ' + linea : ''}</a>`;
+    return `<a href="#" data-a="${esc(archivo)}" data-l="${linea || 1}">${texto ? esc(texto) : esc(archivo) + (linea ? ', línea ' + linea : '')}</a>`;
   }
 
   function htmlErrores(errores) {
     let h = aviso('mal', 'circle-x', 'Tu código no compila, así que todavía no se puede ejecutar. Corrige el primer error y vuelve a intentar.');
     h += errores.slice(0, 6).map(e => {
-      const es = traducir(e.mensaje);
+      const es = /_{4,}/.test(e.codigo || '') ? 'En esta línea todavía hay un espacio ____ por completar.' : traducir(e.mensaje);
       const caret = e.codigo && e.columna ? '\n' + ' '.repeat(Math.max(0, e.columna - 1)) + '^' : '';
       return `<div class="error-comp"><div class="donde">${enlace(e.archivo, e.linea)}</div>
         <div class="real">${esc(limpiar(e.mensaje))}</div>
@@ -676,6 +749,18 @@
     }).join('');
     if (errores.length > 6) h += `<p class="vacio">… y ${errores.length - 6} errores más (muchas veces se arreglan solos al corregir el primero).</p>`;
     return h;
+  }
+
+  /** Espacios ____ que faltan, agrupados por archivo, con enlace a cada línea. */
+  function htmlPendientes(lista, pasaTodo) {
+    const porArchivo = {};
+    lista.forEach(b => (porArchivo[b.archivo] = porArchivo[b.archivo] || []).push(b.linea));
+    const filas = Object.entries(porArchivo).map(([a, ls]) =>
+      `<li><b>${esc(a)}</b>${archivoActual === a ? '' : ' (en su pestaña)'}: ${ls.map(l => enlace(a, l, 'línea ' + l)).join(', ')}</li>`).join('');
+    const texto = pasaTodo
+      ? 'Pasan las pruebas, pero todavía quedan espacios <code>____</code>. Mientras no los completes, este paso no cuenta como terminado y al calificar vale 0:'
+      : 'Todavía quedan espacios <code>____</code> sin completar:';
+    return aviso('info', 'pencil-line', texto + `<ul class="pendientes">${filas}</ul>`);
   }
 
   /** Aviso con icono. `html` ya viene escapado o es HTML propio. */
@@ -728,12 +813,15 @@
     } else if (modo === 'comprobar') {
       const rs = res.pruebas || [];
       const ok = rs.filter(r => r.ok).length;
-      h += ok === rs.length && rs.length
+      h += ok === rs.length && rs.length && res.pendientes && res.pendientes.length
+        ? aviso('ok', 'circle-check', `Pasaste las ${rs.length} pruebas de este paso.`)
+        : ok === rs.length && rs.length
         ? aviso('ok', 'trophy', `¡Muy bien! Pasaste las ${rs.length} pruebas de este paso.${estado.paso < A.pasos.length - 1 ? ' Continúa con <b>Siguiente</b>.' : ' Ve a <b>Nota</b> para calificar.'}`)
         : aviso('mal', 'circle-x', `Vas <b>${ok} de ${rs.length}</b>. Lee el mensaje de la primera prueba que falla, corrige y vuelve a comprobar.`);
       h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? I('circle-check') : I('circle-x')}</span><div><div class="nombre">${esc(r.nombre)}</div>
         ${r.ok ? '' : '<pre class="msg">' + esc(limpiar(r.mensaje || '')) + '</pre>'}
         ${r.salida ? '<details class="plegable"><summary>Lo que imprimió tu código en esta prueba</summary><pre class="consola">' + esc(r.salida) + '</pre></details>' : ''}</div></div>`).join('');
+      if (res.pistaNueva) h += aviso('azul', 'lightbulb', 'Se desbloqueó una pista. Está debajo de <b>Tu tarea</b>, en la explicación. Abrirla resta parte de la nota de este paso.');
       if (res.ms) h += `<p class="vacio pie-resultado">Evaluado en el servidor en ${(res.ms / 1000).toFixed(1)} s.</p>`;
     } else {
       // Ejecutar
@@ -755,6 +843,7 @@
       }
       if (res.excepcion) h += aviso('mal', 'triangle-alert', esc(limpiar(res.excepcion)), 'white-space:pre-wrap;font-family:var(--mono);font-size:12.5px');
     }
+    if (res.pendientes && res.pendientes.length) h = htmlPendientes(res.pendientes, modo === 'comprobar' && res.pruebas && res.pruebas.length && res.pruebas.every(r => r.ok)) + h;
     s.innerHTML = h;
     if (preview) s.appendChild(preview);
     const irApi = $('#ir-api');
@@ -822,7 +911,7 @@
     return [
       { titulo: 'Así funciona tu actividad', texto: `Son ${A.pasos.length} pasos. En cada uno lees un tema, completas un código y lo compruebas. Te mostramos dónde está cada cosa; toma menos de un minuto.` },
       { sel: '.explicacion', lado: 'derecha', titulo: 'Lee la explicación', texto: 'Aquí está el tema del paso, con ejemplos de código. Léela antes de escribir.' },
-      { sel: '.tarea', lado: 'derecha', centrar: true, titulo: 'Tu tarea', texto: 'Este bloque dice exactamente qué tienes que hacer en el paso. Si te atascas, debajo hay pistas.' },
+      { sel: '.tarea', lado: 'derecha', centrar: true, titulo: 'Tu tarea', texto: 'Este bloque dice exactamente qué tienes que hacer en el paso. Debajo hay pistas que se desbloquean después de intentar con Comprobar; cada una que abras resta un poco de la nota del paso.' },
       { sel: '.editor-caja', lado: 'izquierda', titulo: 'Completa el código', texto: 'Reemplaza cada espacio resaltado <code class="blanco">____</code> por el código correcto. Si el paso tiene varios archivos, cámbialos con las pestañas de arriba.' },
       { sel: '#ejecutar', lado: 'arriba', titulo: 'Ejecutar', texto: ejecutar },
       { sel: '#comprobar', lado: 'arriba', titulo: 'Comprobar', texto: 'Corre las pruebas automáticas del paso y te dice cuáles pasan y cuáles fallan. También funciona con <kbd class="kbd">Ctrl</kbd> + <kbd class="kbd">Enter</kbd>.' },
@@ -832,7 +921,7 @@
         ? 'La ficha amarilla es el paso en el que estás: púlsala para ver todos los pasos y cuáles ya completaste. Con las flechas vas al anterior o al siguiente.'
         : 'Cada punto es un paso: se pone verde cuando pasas sus pruebas y rojo si alguna falla. La ficha amarilla es el paso en el que estás. Cuando lo completes, <b>Siguiente</b> se pone azul.' },
       { sel: '.nodo.nota', lado: 'abajo', titulo: 'Califica al final', texto: 'Cuando termines, entra a <b>Nota</b> y pulsa <b>Calificar mi actividad</b>. La nota queda registrada para tu profesor y puedes calificar varias veces.' },
-      { sel: '#ver-guia', lado: 'abajo', titulo: 'Todo se guarda solo', texto: 'Tu código se guarda mientras escribes y puedes seguir en otro computador con tu documento y PIN. Para ver esta guía otra vez, pulsa este botón.' },
+      { sel: '#ver-guia', lado: 'abajo', titulo: 'Todo se guarda solo', texto: 'Tu código se guarda mientras escribes y puedes seguir en otro computador entrando con el mismo correo. Para ver esta guía otra vez, pulsa este botón.' },
     ].filter(p => !p.sel || visible($(p.sel)));
   }
 
@@ -966,17 +1055,20 @@
     const filas = A.pasos.map((p, i) => {
       const r = estado.res[p.id];
       const st = !r ? `<span class="estado-paso nada">${I('circle-dashed')} Sin comprobar</span>`
-        : r.ok === r.total ? `<span class="estado-paso ok">${I('circle-check')} Completo</span>`
+        : r.ok === r.total && !r.pendientes ? `<span class="estado-paso ok">${I('circle-check')} Completo</span>`
+          : r.ok === r.total ? `<span class="estado-paso medio">${I('pencil-line')} Faltan espacios ____</span>`
           : `<span class="estado-paso medio">${I('circle-x')} ${r.ok} de ${r.total}</span>`;
-      return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${st}</td></tr>`;
+      const usadas = estado.pistas[p.id] || 0;
+      const txtPistas = usadas ? `${usadas} ${usadas === 1 ? 'pista' : 'pistas'} (−${usadas * 15}%)` : '<span class="suave">Ninguna</span>';
+      return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${st}</td><td>${txtPistas}</td></tr>`;
     }).join('');
     $('#vista').innerHTML = `
       <div class="entrega">
         <div class="card">
           <header><h2>${I('flag')} Calificar y ver la nota</h2>
-            <p>El servidor compila y ejecuta <b>todas</b> las pruebas sobre tu código actual. Cada paso vale lo mismo. La nota va de <b>0.0 a 5.0</b> y se aprueba con <b>3.0</b>.</p></header>
+            <p>El servidor compila y ejecuta <b>todas</b> las pruebas sobre tu código actual. Cada paso vale lo mismo y cada pista que abriste resta el 15% de su paso. La nota va de <b>0.0 a 5.0</b> y se aprueba con <b>3.0</b>.</p></header>
           <section>
-            <div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Tu última comprobación</th></tr>${filas}</table></div>
+            <div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Tu última comprobación</th><th>Pistas abiertas</th></tr>${filas}</table></div>
             <p>Puedes calificar varias veces. <b>Tu profesor ve todas tus notas</b> (la última y la mejor) directamente en el sistema: no tienes que enviarle nada.</p>
           </section>
           <footer class="acciones"><button class="btn" data-size="lg" id="calificar">${I('calculator')} Calificar mi actividad</button>
@@ -1022,7 +1114,7 @@
     const filas = n.detalle.map((d, i) => {
       const fallidas = (d.pruebas || []).filter(p => !p[1]).map(p => '<li>' + esc(p[0]) + '</li>').join('');
       return `<tr><td>${i + 1}. ${esc(d.titulo)}${d.nota ? '<br><small style="color:var(--aviso)">' + esc(d.nota) + '</small>' : ''}${fallidas ? '<ul class="fallidas">' + fallidas + '</ul>' : ''}</td>
-        <td style="white-space:nowrap">${d.ok} / ${d.total}</td><td style="white-space:nowrap">${(5 / A.pasos.length * (d.total ? d.ok / d.total : 0)).toFixed(2)} / ${(5 / A.pasos.length).toFixed(2)}</td></tr>`;
+        <td style="white-space:nowrap">${d.ok} / ${d.total}${d.pistas ? `<br><small class="suave">${d.pistas} ${d.pistas === 1 ? 'pista' : 'pistas'} (−${d.pistas * 15}%)</small>` : ''}</td><td style="white-space:nowrap">${(d.aporte != null ? d.aporte : 5 / A.pasos.length * (d.total ? d.ok / d.total : 0)).toFixed(2)} / ${(5 / A.pasos.length).toFixed(2)}</td></tr>`;
     }).join('');
     $('#resultado-final').innerHTML = `
       <div class="card">
@@ -1030,7 +1122,7 @@
           <div class="nota-grande">
             <div><div class="suave" style="font-size:13px">Tu nota</div><div class="valor ${aprueba ? 'aprueba' : 'pierde'}">${n.nota.toFixed(1)}<small> / 5.0</small></div></div>
             <div style="flex:1;min-width:240px"><div class="titulo-nota">${aprueba ? I('trophy') + ' ¡Aprobaste la recuperación!' : 'Aún no alcanzas 3.0'}</div>
-              <div class="quien-nota"><span>${esc(estudiante.nombre)}</span><span>Documento ${esc(estudiante.doc)}</span><span>${fecha(n.fecha || Date.now())}</span></div>
+              <div class="quien-nota"><span>${esc(estudiante.nombre)}</span><span>${esc(estudiante.correo)}</span><span>${fecha(n.fecha || Date.now())}</span></div>
               <div class="registrada">${I('circle-check')}<span>Esta nota quedó registrada para tu profesor.${aprueba ? '' : ' Puedes volver a los pasos incompletos, corregir y calificar de nuevo.'}</span></div></div>
           </div>
         </section>
