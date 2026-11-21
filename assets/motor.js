@@ -192,10 +192,11 @@
   function mostrarTrabajo() {
     const iniciales = String(estudiante.nombre || estudiante.doc || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
     app.innerHTML = `
-      <header class="barra dark">
+      <header class="barra">
         <div class="marca">${LOGO()}<span class="txt">${esc(A.curso)}<small>Recuperación</small></span></div>
-        <nav class="navpasos" aria-label="Pasos">
+        <nav class="ruta" aria-label="Pasos de la actividad">
           <button class="nav-flecha" id="anterior" title="Paso anterior (Alt + flecha izquierda)" aria-label="Paso anterior">${I('chevron-left')}</button>
+          <div class="nodos" id="ruta-antes"></div>
           <div class="selector-paso">
             <button class="paso-actual" id="paso-actual" aria-haspopup="menu" aria-expanded="false" title="Ver todos los pasos">
               <span class="anillo" id="anillo"></span>
@@ -204,11 +205,11 @@
             </button>
             <div class="menu-pasos" id="menu-pasos" role="menu" hidden></div>
           </div>
+          <div class="nodos" id="ruta-despues"></div>
           <button class="nav-flecha siguiente" id="siguiente" title="Paso siguiente (Alt + flecha derecha)"><span>Siguiente</span>${I('chevron-right')}</button>
         </nav>
         <div class="lado">
           <span class="guardado" id="guardado">${I('cloud-check')}<span>Guardado</span></span>
-          <button class="btn ir-nota" data-variant="outline" data-size="sm" id="ir-nota" title="Calificar toda la actividad y ver tu nota">${I('flag')}<span>Calificar</span></button>
           <div class="usuario">
             <button class="avatar" id="avatar" aria-haspopup="menu" aria-expanded="false" title="${esc(estudiante.nombre)}">${esc(iniciales)}</button>
             <div class="menu-usuario" id="menu-usuario" role="menu" hidden>
@@ -217,12 +218,10 @@
             </div>
           </div>
         </div>
-        <div class="progreso" id="progreso" aria-label="Avance por paso"></div>
       </header>
       <main id="vista"></main>`;
     $('#anterior').onclick = () => irA(estado.paso - 1);
     $('#siguiente').onclick = () => irA(estado.paso + 1);
-    $('#ir-nota').onclick = () => irA(A.pasos.length);
     $('#salir').onclick = salir;
     menu($('#paso-actual'), $('#menu-pasos'));
     menu($('#avatar'), $('#menu-usuario'));
@@ -258,22 +257,32 @@
     const completos = A.pasos.filter((p, i) => estadoDe(i).clase === 'hecho').length;
     const enNota = estado.paso >= total;
 
-    // Franja segmentada (un tramo por paso y uno para la nota) y lista del menú
-    let franja = '', lista = '';
+    // Ruta de la barra: un punto por paso (el actual es la ficha resaltada) y la nota al final
+    const nodo = i => {
+      if (i === total) return `<button class="nodo nota${entregas.length ? ' hecho' : ''}" data-i="${total}" title="Calificar y ver la nota">${I('flag')}<span>Nota</span></button>`;
+      const { r, clase } = estadoDe(i);
+      const txt = `Paso ${i + 1}: ${esc(A.pasos[i].titulo)}${r ? ` (${r.ok} de ${r.total} pruebas)` : ''}`;
+      return `<button class="nodo ${clase}" data-i="${i}" title="${txt}" aria-label="${txt}">${clase === 'hecho' ? I('check') : i + 1}</button>`;
+    };
+    // Tramo que sale del paso i: verde si ese paso ya está completo
+    const linea = i => `<span class="ruta-linea${estadoDe(i).clase === 'hecho' ? ' hecha' : ''}"></span>`;
+    let antes = '', despues = '', lista = '';
+    for (let i = 0; i < Math.min(estado.paso, total); i++) antes += nodo(i) + linea(i);
+    for (let i = estado.paso + 1; i <= total; i++) despues += linea(i - 1) + nodo(i);
+    $('#ruta-antes').innerHTML = antes;
+    $('#ruta-despues').innerHTML = despues;
+    document.querySelectorAll('.ruta .nodo').forEach(b => b.onclick = () => irA(+b.dataset.i));
+
+    // Lista del menú con todos los pasos
     A.pasos.forEach((paso, i) => {
       const { r, clase } = estadoDe(i);
-      const pruebas = r ? r.ok + '/' + r.total + ' pruebas' : '';
-      franja += `<button class="tramo ${clase}${i === estado.paso ? ' actual' : ''}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}${pruebas ? ' (' + pruebas + ')' : ''}" aria-label="Paso ${i + 1}"></button>`;
+      const pruebas = r ? r.ok + ' de ' + r.total + ' pruebas' : '';
       const icono = clase === 'hecho' ? 'circle-check' : clase === 'fallo' ? 'circle-x' : 'circle-dashed';
       lista += `<button class="item ${clase}${i === estado.paso ? ' actual' : ''}" role="menuitem" data-i="${i}">
         <span class="estado">${I(icono)}</span><span class="nombre"><small>Paso ${i + 1}</small>${esc(paso.titulo)}</span><span class="pruebas">${pruebas || 'Sin comprobar'}</span></button>`;
     });
-    franja += `<button class="tramo nota${entregas.length ? ' hecho' : ''}${enNota ? ' actual' : ''}" data-i="${total}" title="Calificar y ver la nota" aria-label="Nota"></button>`;
     lista += `<button class="item nota${enNota ? ' actual' : ''}" role="menuitem" data-i="${total}">
-      <span class="estado">${I('flag')}</span><span class="nombre"><small>Final</small>Calificar y ver la nota</span><span class="pruebas">${entregas.length ? 'Última: ' + Number(entregas[0].nota).toFixed(1) : ''}</span></button>`;
-    const p = $('#progreso');
-    p.innerHTML = franja;
-    p.querySelectorAll('button').forEach(b => b.onclick = () => irA(+b.dataset.i));
+      <span class="estado">${I('flag')}</span><span class="nombre"><small>Al terminar</small>Calificar y ver la nota</span><span class="pruebas">${entregas.length ? 'Última: ' + Number(entregas[0].nota).toFixed(1) : ''}</span></button>`;
     const m = $('#menu-pasos');
     m.innerHTML = `<div class="cab-menu"><b>Tu avance</b><span>${completos} de ${total} pasos completos</span><div class="barra-menu"><i style="width:${Math.round(completos / total * 100)}%"></i></div></div><div class="lista">${lista}</div>`;
     m.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => irA(+b.dataset.i));
@@ -287,8 +296,9 @@
     anillo.innerHTML = enNota ? I('flag') : actual === 'hecho' ? I('check') : String(estado.paso + 1);
     $('#anterior').disabled = estado.paso === 0;
     $('#siguiente').disabled = enNota;
+    // "Siguiente" se vuelve el botón principal solo cuando el paso actual está completo
+    $('#siguiente').classList.toggle('listo', actual === 'hecho');
     $('#siguiente').querySelector('span').textContent = estado.paso === total - 1 ? 'Ir a la nota' : 'Siguiente';
-    $('#ir-nota').classList.toggle('activo', enNota);
   }
 
   function irA(i) {
@@ -312,7 +322,7 @@
       <div class="trabajo" id="trabajo">
         <section class="panel explicacion">
           <div class="cab-paso">
-            <div class="num">Paso ${i + 1}</div>
+            <div class="num">Paso ${i + 1} de ${A.pasos.length}</div>
             <h2>${esc(paso.titulo)}</h2>
           </div>
           <div class="contenido prosa">
@@ -857,7 +867,7 @@
           <div class="nota-grande">
             <div><div class="suave" style="font-size:13px">Tu nota</div><div class="valor ${aprueba ? 'aprueba' : 'pierde'}">${n.nota.toFixed(1)}<small> / 5.0</small></div></div>
             <div style="flex:1;min-width:240px"><div class="titulo-nota">${aprueba ? I('trophy') + ' ¡Aprobaste la recuperación!' : 'Aún no alcanzas 3.0'}</div>
-              <div class="suave">${esc(estudiante.nombre)} · ${esc(estudiante.doc)} · ${fecha(n.fecha || Date.now())}</div>
+              <div class="quien-nota"><span>${esc(estudiante.nombre)}</span><span>Documento ${esc(estudiante.doc)}</span><span>${fecha(n.fecha || Date.now())}</span></div>
               <div class="registrada">${I('circle-check')}<span>Esta nota quedó registrada para tu profesor.${aprueba ? '' : ' Puedes volver a los pasos incompletos, corregir y calificar de nuevo.'}</span></div></div>
           </div>
         </section>

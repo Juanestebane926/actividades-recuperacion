@@ -27,13 +27,13 @@
   function login(error) {
     app.innerHTML = `<div class="portada angosta">
       <div class="card">
-        <header><span class="eyebrow">${I('key-round')} Acceso restringido</span><h2 style="font-size:20px;font-weight:700;margin-top:6px">Panel docente</h2>
+        <header><h2 style="font-size:21px;font-weight:800;display:flex;align-items:center;gap:10px"><span class="baldosa sello">${window.Logo ? window.Logo('marca') : ''}</span>Panel docente</h2>
           <p>Notas, avance y código de los estudiantes en las actividades de recuperación.</p></header>
         <section>
           <form id="f" class="form">
             <div class="field"><label for="clave">Clave del panel</label><input class="input" id="clave" type="password" autocomplete="current-password" required><small>Es la variable <code>DOCENTE_CLAVE</code> del servidor.</small></div>
             <div class="aviso mal ${error ? '' : 'oculto'}" id="err">${I('circle-x')}<div>${esc(error || '')}</div></div>
-            <button class="btn" type="submit" style="width:100%">Entrar ${I('arrow-right')}</button>
+            <button class="btn" data-size="lg" type="submit" style="width:100%">Entrar al panel</button>
           </form>
         </section>
       </div>
@@ -73,8 +73,8 @@
     const aprob = conNota.filter(e => e.ultimaNota >= 3);
     const th = (col, t) => `<th data-col="${col}">${t}${orden.col === col ? I(orden.asc ? 'arrow-up' : 'arrow-down') : ''}</th>`;
     const tarjeta = (etq, icono, valor, color) => `<div class="card"><div class="etq">${etq}${I(icono)}</div><div class="num"${color ? ' style="color:' + color + '"' : ''}>${valor}</div></div>`;
-    app.innerHTML = `<header class="barra dark simple">
-        <div class="marca"><span class="baldosa icono">${I('chart-column')}</span><span class="txt">Panel docente<small>Actividades de recuperación</small></span></div>
+    app.innerHTML = `<header class="barra simple">
+        <div class="marca"><span class="baldosa sello">${window.Logo ? window.Logo('marca') : ''}</span><span class="txt">Panel docente<small>Actividades de recuperación</small></span></div>
         <span style="flex:1"></span>
         <button class="btn" data-variant="outline" data-size="sm" id="csv">${I('download')} Descargar notas (CSV)</button>
         <button class="btn" data-variant="outline" data-size="sm" id="recargar">${I('refresh-cw')} Actualizar</button>
@@ -90,7 +90,7 @@
         <input class="input" id="buscar" placeholder="Buscar nombre o documento" value="${esc(filtro.texto)}" aria-label="Buscar">
         <select class="select" id="act" aria-label="Curso"><option value="">Todos los cursos</option>${acts.map(a => `<option value="${a.id}" ${filtro.act === a.id ? 'selected' : ''}>${esc(a.curso)}</option>`).join('')}</select>
         <select class="select" id="estado" aria-label="Estado"><option value="">Cualquier estado</option><option value="aprobado" ${filtro.estado === 'aprobado' ? 'selected' : ''}>Aprobados</option><option value="reprobado" ${filtro.estado === 'reprobado' ? 'selected' : ''}>Con nota &lt; 3.0</option><option value="sin" ${filtro.estado === 'sin' ? 'selected' : ''}>Sin calificar</option></select>
-        <span class="cuenta">${lista.length} mostrados · clic en una fila para ver el detalle y el código</span>
+        <span class="cuenta">${lista.length} mostrados. Haz clic en una fila para ver el detalle y el código.</span>
       </div>
       <div class="tabla-wrap"><table class="lista">
         <tr>${th('curso', 'Curso')}${th('nombre', 'Nombre')}${th('doc', 'Documento')}<th>Pasos (pruebas que pasan)</th>${th('ultimaNota', 'Última nota')}${th('mejorNota', 'Mejor')}${th('entregas', 'Calif.')}${th('comprobaciones', 'Comprob.')}${th('ultimo', 'Última actividad')}</tr>
@@ -123,7 +123,7 @@
     const pintarDet = () => {
       det.innerHTML = `
         <div style="display:flex;gap:10px;align-items:start;flex-wrap:wrap">
-          <div style="flex:1;min-width:0"><h2>${esc(d.nombre)}</h2><div class="suave">${esc(d.curso)} · Documento ${esc(d.doc)} · inició ${fecha(d.creado)} · última actividad ${fecha(d.ultimo)}</div></div>
+          <div style="flex:1;min-width:0"><h2>${esc(d.nombre)}</h2><div class="suave" style="display:flex;flex-wrap:wrap;gap:2px 16px"><span>${esc(d.curso)}</span><span>Documento ${esc(d.doc)}</span><span>Inició ${fecha(d.creado)}</span><span>Última actividad ${fecha(d.ultimo)}</span></div></div>
           <button class="btn" data-variant="ghost" data-size="icon-sm" id="cerrar" title="Cerrar" aria-label="Cerrar">${I('x')}</button></div>
         <h3>Avance por paso (última comprobación)</h3>
         <div class="marco-tabla"><table class="tabla"><tr><th>Paso</th><th>Pruebas</th></tr>${d.pasos.map((p, i) => { const r = res[p.id]; return `<tr><td>${i + 1}. ${esc(p.titulo)}</td><td>${r ? r.ok + ' / ' + r.total : '—'}</td></tr>`; }).join('')}</table></div>
@@ -140,7 +140,7 @@
           <span class="espacio"></span>
           <button class="btn" data-variant="destructive" id="borrar">${I('trash-2')} <span>Borrar estudiante</span></button>
         </div>
-        <p class="suave" style="font-size:13px;margin:0">Comprobaciones: ${d.intentos.filter(x => x.modo === 'comprobar').length} · Ejecuciones: ${d.intentos.filter(x => x.modo === 'ejecutar').length}</p>`;
+        <p class="suave" style="font-size:13px;margin:0">Comprobaciones: ${d.intentos.filter(x => x.modo === 'comprobar').length}. Ejecuciones: ${d.intentos.filter(x => x.modo === 'ejecutar').length}</p>`;
       $('#cerrar').onclick = () => dlg.close();
       det.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { archivo = b.dataset.f; pintarDet(); });
       const recal = async (entrega) => {
