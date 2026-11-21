@@ -42,18 +42,18 @@ public class VacanteService {
         return nueva;
     }
 
-    // ---------------- PASO 6 (todavía no) ----------------
+    // ---------------- PASO 6: buscar por empresa y eliminar ----------------
 
     // Devuelve las vacantes cuya empresa contiene el texto (sin importar mayúsculas)
     public List<Vacante> buscarPorEmpresa(String empresa) {
         List<Vacante> resultado = new ArrayList<>();
-        // TODO Paso 6
+        // Escribe aquí tu código del paso 6
         return resultado;
     }
 
     // Elimina la vacante con ese id. Devuelve true si la encontró y la borró.
     public boolean eliminar(Long id) {
-        // TODO Paso 6
+        // Escribe aquí tu código del paso 6 (reemplaza el return false)
         return false;
     }
 }

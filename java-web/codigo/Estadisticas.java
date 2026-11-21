@@ -17,8 +17,8 @@ public class Estadisticas {
     // 2. Cuenta cuántas notas son aprobatorias (mayores o iguales a 3.0).
     public static int contarAprobados(double[] notas) {
         int contador = 0;
-        // TODO: recorre el arreglo con un for y suma 1 al contador
-        //       cada vez que encuentres una nota >= 3.0
+        // Recorre el arreglo con un for y suma 1 al contador
+        // cada vez que encuentres una nota >= 3.0
 
         return contador;
     }

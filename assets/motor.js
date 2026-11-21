@@ -238,6 +238,7 @@
   }
   document.addEventListener('keydown', ev => {
     if (guia || !ev.altKey || !estado || !$('#vista')) return;
+    if (ev.target.closest && ev.target.closest('.CodeMirror, input, textarea, select')) return;   // Alt+flechas es moverse en el texto
     if (ev.key === 'ArrowLeft') { ev.preventDefault(); irA(estado.paso - 1); }
     if (ev.key === 'ArrowRight') { ev.preventDefault(); irA(estado.paso + 1); }
   });
@@ -516,6 +517,7 @@
     estado.archivos[archivoActual] = originales[archivoActual];
     cambios[archivoActual] = originales[archivoActual];
     editor.setValue(originales[archivoActual]);
+    if (crearEditor.marcar) crearEditor.marcar();
     marcarPestanas();
     guardar();
   }
@@ -531,10 +533,25 @@
   function crearEditor(paso) {
     const tabs = $('#pestanas');
     const modo = A.motor === 'java' ? 'text/x-java' : 'text/jsx';
+    const sangria = A.motor === 'react' ? 2 : 4;   // React se escribe con 2 espacios; Java con 4
+    const guardarYa = () => { guardar(true); };
     editor = CodeMirror($('#editor'), {
-      value: '', mode: modo, theme: 'material-darker', lineNumbers: true, indentUnit: 4, tabSize: 4,
-      matchBrackets: true, autoCloseBrackets: true, lineWrapping: false,
-      extraKeys: { 'Ctrl-Enter': () => evaluar(paso, 'comprobar'), 'Cmd-Enter': () => evaluar(paso, 'comprobar'), Tab: cm => cm.replaceSelection('    ') }
+      value: '', mode: modo, theme: 'material-darker', lineNumbers: true, indentUnit: sangria, tabSize: sangria,
+      matchBrackets: true, autoCloseBrackets: true, lineWrapping: false, styleActiveLine: true,
+      autoCloseTags: A.motor === 'react',
+      // Textos de buscar / reemplazar / ir a la línea en español
+      phrases: { 'Search:': 'Buscar:', '(Use /re/ syntax for regexp search)': '(Enter: siguiente; Esc: cerrar)', 'Replace:': 'Reemplazar:',
+        'With:': 'Por:', 'Replace?': '¿Reemplazar?', 'Yes': 'Sí', 'No': 'No', 'All': 'Todos', 'Stop': 'Parar', 'Replace all:': 'Reemplazar todo:',
+        'Jump to line:': 'Ir a la línea:', '(Use line:column or scroll% syntax)': '(línea o línea:columna)' },
+      extraKeys: {
+        'Ctrl-Enter': () => evaluar(paso, 'comprobar'), 'Cmd-Enter': () => evaluar(paso, 'comprobar'),
+        // Tab: con varias líneas seleccionadas las corre a la derecha (no las borra); Shift+Tab las corre a la izquierda
+        Tab: cm => cm.somethingSelected() ? cm.execCommand('indentMore') : cm.replaceSelection(' '.repeat(sangria)),
+        'Shift-Tab': 'indentLess',
+        'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment',
+        'Ctrl-S': guardarYa, 'Cmd-S': guardarYa,
+        'Ctrl-H': 'replace', 'Ctrl-L': 'jumpToLine',
+      }
     });
     let marcas = [];
     const marcarBlancos = () => {
@@ -544,6 +561,7 @@
         while ((m = re.exec(l.text))) marcas.push(editor.markText({ line: n, ch: m.index }, { line: n, ch: m.index + m[0].length }, { className: 'cm-blanco' }));
       });
     };
+    crearEditor.marcar = marcarBlancos;
     let t = null;
     editor.on('change', (cm, ch) => {
       if (ch.origin === 'setValue') return;
@@ -555,20 +573,27 @@
       clearTimeout(t); t = setTimeout(() => { marcarBlancos(); marcarPestanas(); }, 300);
       if (marcaError) { editor.removeLineClass(marcaError, 'background', 'cm-linea-error'); marcaError = null; }
     });
+    // Cada archivo tiene su propio documento: al cambiar de pestaña se conservan el historial de Ctrl+Z, el cursor y el scroll
+    const docs = {};
     const abrir = n => {
-      archivoActual = n;
       const esHttp = n === HTTP;
+      if (!esHttp && n === archivoActual && docs[n] && editor.getDoc() === docs[n]) return;   // ya está abierto
+      archivoActual = n;
       $('#editor').classList.toggle('oculto', esHttp);
       $('#peticiones').classList.toggle('oculto', !esHttp);
       tabs.querySelectorAll('button').forEach(b => b.classList.toggle('activa', b.dataset.n === n));
       textoReiniciar();
       if (esHttp) { pintarPeticiones(paso); return; }
+      if (marcaError) { try { editor.removeLineClass(marcaError, 'background', 'cm-linea-error'); } catch (e) { /* era de otro archivo */ } marcaError = null; }
+      const nuevo = !docs[n];
+      if (nuevo) docs[n] = CodeMirror.Doc(estado.archivos[n], modo);
+      editor.swapDoc(docs[n]);
       editor.setOption('readOnly', !!A.archivos[n].soloLectura);
-      editor.setValue(estado.archivos[n]);
-      editor.clearHistory();
       marcarBlancos();
-      const primero = editor.getValue().indexOf('____');
-      if (primero >= 0) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
+      if (nuevo) {
+        const primero = editor.getValue().indexOf('____');
+        if (primero >= 0) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
+      }
       setTimeout(() => editor.refresh(), 0);
     };
     if (window.Sugerencias) Sugerencias.activar(editor, { A, archivos: () => estado.archivos, actual: () => archivoActual });
@@ -663,9 +688,23 @@
     return r;
   }
 
+  /** Saca de la cola de guardado los archivos que van en esta petición (el servidor los guarda al evaluar). */
+  function sacarDeLaCola(archivos) {
+    const enviados = {};
+    for (const n of Object.keys(archivos)) if (n in cambios) { enviados[n] = cambios[n]; delete cambios[n]; }
+    return enviados;
+  }
+  /** Si la petición falló, los archivos vuelven a la cola (sin pisar lo que se escribió mientras tanto). */
+  function devolverALaCola(enviados) {
+    if (!enviados || !Object.keys(enviados).length) return;
+    cambios = Object.assign({}, enviados, cambios);
+    guardar();
+  }
+
   async function evaluar(paso, modo, soloPeticiones) {
     if (ocupado) return;
     ocupado = true;
+    let enviados = null;
     ['#ejecutar', '#comprobar', '#reiniciar'].forEach(s => { const b = $(s); if (b) b.disabled = true; });
     try {
       setCargando(modo === 'ejecutar'
@@ -673,7 +712,7 @@
         : 'Compilando y corriendo las pruebas…');
       const archivos = {};
       paso.compilar.forEach(n => { if (!A.archivos[n].soloLectura) archivos[n] = estado.archivos[n]; });
-      cambios = {};
+      enviados = sacarDeLaCola(archivos);
       const cuerpo = { paso: paso.id, modo, archivos };
       if (modo === 'ejecutar' && tienePeticiones(paso)) cuerpo.peticiones = soloPeticiones || (estado.peticiones[paso.id] ?? paso.ejecutar.peticiones);
       const res = await api('POST', '/api/evaluar', cuerpo);
@@ -688,6 +727,7 @@
       if (pasoActual === paso) pintarResultado(res, modo);
     } catch (e) {
       if (e.status === 401) { salir(); return; }
+      devolverALaCola(enviados);
       pintarResultado({ errorInterno: e.message }, modo);
     } finally {
       ocupado = false;
@@ -751,12 +791,38 @@
     return h;
   }
 
+  /** Primer paso que tiene el archivo en sus pestañas (el paso donde se completa). */
+  function pasoDeArchivo(archivo) {
+    return A.pasos.findIndex(p => p.archivos.includes(archivo));
+  }
+
+  /** Abre el archivo en esa línea. Si el archivo no tiene pestaña en este paso, va al paso donde se completa. */
+  function irALinea(archivo, linea) {
+    if (!pasoActual || !pasoActual.archivos.includes(archivo)) {
+      const i = pasoDeArchivo(archivo);
+      if (i < 0) return;
+      irA(i);
+      if (!pasoActual || !pasoActual.archivos.includes(archivo)) return;
+    }
+    crearEditor.abrir(archivo);
+    const l = Math.max(0, (linea || 1) - 1);
+    if (marcaError) { try { editor.removeLineClass(marcaError, 'background', 'cm-linea-error'); } catch (e) { /* otro archivo */ } }
+    editor.focus(); editor.setCursor({ line: l, ch: 0 }); editor.scrollIntoView({ line: l, ch: 0 }, 100);
+    marcaError = editor.addLineClass(l, 'background', 'cm-linea-error');
+  }
+
   /** Espacios ____ que faltan, agrupados por archivo, con enlace a cada línea. */
   function htmlPendientes(lista, pasaTodo) {
     const porArchivo = {};
     lista.forEach(b => (porArchivo[b.archivo] = porArchivo[b.archivo] || []).push(b.linea));
+    const donde = a => {
+      if (archivoActual === a) return '';
+      if (pasoActual && pasoActual.archivos.includes(a)) return ' (en su pestaña)';
+      const i = pasoDeArchivo(a);
+      return i >= 0 ? ` (se completa en el paso ${i + 1}; el enlace te lleva allá)` : '';
+    };
     const filas = Object.entries(porArchivo).map(([a, ls]) =>
-      `<li><b>${esc(a)}</b>${archivoActual === a ? '' : ' (en su pestaña)'}: ${ls.map(l => enlace(a, l, 'línea ' + l)).join(', ')}</li>`).join('');
+      `<li><b>${esc(a)}</b>${donde(a)}: ${ls.map(l => enlace(a, l, 'línea ' + l)).join(', ')}</li>`).join('');
     const texto = pasaTodo
       ? 'Pasan las pruebas, pero todavía quedan espacios <code>____</code>. Mientras no los completes, este paso no cuenta como terminado y al calificar vale 0:'
       : 'Todavía quedan espacios <code>____</code> sin completar:';
@@ -821,7 +887,6 @@
       h += rs.map(r => `<div class="prueba ${r.ok ? 'ok' : 'mal'}"><span class="icono">${r.ok ? I('circle-check') : I('circle-x')}</span><div><div class="nombre">${esc(r.nombre)}</div>
         ${r.ok ? '' : '<pre class="msg">' + esc(limpiar(r.mensaje || '')) + '</pre>'}
         ${r.salida ? '<details class="plegable"><summary>Lo que imprimió tu código en esta prueba</summary><pre class="consola">' + esc(r.salida) + '</pre></details>' : ''}</div></div>`).join('');
-      if (res.pistaNueva) h += aviso('azul', 'lightbulb', 'Se desbloqueó una pista. Está debajo de <b>Tu tarea</b>, en la explicación. Abrirla resta parte de la nota de este paso.');
       if (res.ms) h += `<p class="vacio pie-resultado">Evaluado en el servidor en ${(res.ms / 1000).toFixed(1)} s.</p>`;
     } else {
       // Ejecutar
@@ -843,6 +908,7 @@
       }
       if (res.excepcion) h += aviso('mal', 'triangle-alert', esc(limpiar(res.excepcion)), 'white-space:pre-wrap;font-family:var(--mono);font-size:12.5px');
     }
+    if (res.pistaNueva) h += aviso('azul', 'lightbulb', 'Se desbloqueó una pista. Está debajo de <b>Tu tarea</b>, en la explicación. Abrirla resta parte de la nota de este paso.');
     if (res.pendientes && res.pendientes.length) h = htmlPendientes(res.pendientes, modo === 'comprobar' && res.pruebas && res.pruebas.length && res.pruebas.every(r => r.ok)) + h;
     s.innerHTML = h;
     if (preview) s.appendChild(preview);
@@ -850,11 +916,7 @@
     if (irApi) irApi.onclick = ev => { ev.preventDefault(); crearEditor.abrir(HTTP); };
     s.querySelectorAll('a[data-a]').forEach(a => a.onclick = ev => {
       ev.preventDefault();
-      if (!pasoActual.archivos.includes(a.dataset.a)) return;
-      crearEditor.abrir(a.dataset.a);
-      const l = Math.max(0, +a.dataset.l - 1);
-      editor.focus(); editor.setCursor({ line: l, ch: 0 }); editor.scrollIntoView({ line: l, ch: 0 }, 100);
-      marcaError = editor.addLineClass(l, 'background', 'cm-linea-error');
+      irALinea(a.dataset.a, +a.dataset.l);
     });
     s.scrollTop = 0;
     if (window.innerWidth < 900) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -888,7 +950,7 @@
       }
       window.__montar = el => ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Limite, null, el));`;
     f.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.development.js"><\/script><script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.development.js"><\/script></head>
+      <script src="${API}/vendor/react.js"><\/script><script src="${API}/vendor/react-dom.js"><\/script></head>
       <body><div id="root"></div><pre id="consola"></pre><script>${pre}<\/script><script>${js.replace(/<\/script/gi, '<\\/script')}<\/script></body></html>`;
     return f;
   }
@@ -1087,10 +1149,11 @@
     const btn = $('#calificar');
     btn.disabled = true;
     setCargando('Calificando todos los pasos en el servidor…');
+    let enviados = null;
     try {
       const archivos = {};
       Object.keys(A.archivos).forEach(n => { if (!A.archivos[n].soloLectura) archivos[n] = estado.archivos[n]; });
-      cambios = {};
+      enviados = sacarDeLaCola(archivos);
       const r = await api('POST', '/api/calificar', { archivos });
       if (r.progreso) estado.res = r.progreso;
       entregas.unshift({ id: r.id, nota: r.nota, detalle: r.detalle, creado: r.fecha });
@@ -1099,6 +1162,7 @@
       pintarHistorial();
     } catch (e) {
       if (e.status === 401) { salir(); return; }
+      devolverALaCola(enviados);
       $('#resultado-final').innerHTML = aviso('mal', 'cloud-off', 'No se pudo calificar: ' + esc(e.message));
     } finally {
       ocupado = false;

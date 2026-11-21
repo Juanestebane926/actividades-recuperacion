@@ -20,7 +20,7 @@ class W1Test {
     @Test
     @DisplayName("estado() con la nota de borde 3.0")
     void t2_borde() {
-        igual("Aprobado", Calificaciones.estado(3.0), "Calificaciones.estado(3.0) (con 3.0 se aprueba: usa >=)");
+        igual("Aprobado", Calificaciones.estado(3.0), "Calificaciones.estado(3.0) (con 3.0 exacto también se aprueba: revisa qué operador incluye el 3.0)");
     }
 
     @Test

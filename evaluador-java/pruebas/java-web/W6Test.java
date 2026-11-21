@@ -16,11 +16,11 @@ class W6Test {
     void t1_crear() {
         try (ServidorWeb s = ServidorWeb.iniciar()) {
             Respuesta r = s.post("/api/estudiantes", "nombre", "Sofia", "edad", "17", "nota", "4.2");
-            estado(r, 201, "Al crear usa response.setStatus(HttpServletResponse.SC_CREATED).");
+            estado(r, 201, "Al crear se responde 201: revisa en la tabla de la explicación qué constante de HttpServletResponse corresponde.");
             JsonNode e = campo(r.json(), "estudiante");
             igual("Sofia", campo(e, "nombre").asText(), "Nombre del estudiante creado");
             igual(4.2, campo(e, "nota").asDouble(), "Nota del estudiante creado");
-            igual(4, campo(s.get("/api/estudiantes").json(), "total").asInt(), "Después del POST, el total del GET (¿llamaste dao.agregar(...)?)");
+            igual(4, campo(s.get("/api/estudiantes").json(), "total").asInt(), "Después del POST, el total del GET (¿el estudiante nuevo quedó guardado en el DAO?)");
         }
     }
 
@@ -32,7 +32,7 @@ class W6Test {
             estado(r, 400, "Si getParameter(\"nombre\") es null o vacío responde 400.");
             igual("El nombre es obligatorio", campo(r.json(), "mensaje").asText(), "Campo \"mensaje\"");
             estado(s.post("/api/estudiantes", "nombre", "   ", "edad", "17", "nota", "4.2"), 400,
-                    "Un nombre con solo espacios también es vacío (usa trim().isEmpty()).");
+                    "Un nombre con solo espacios también cuenta como vacío.");
         }
     }
 
@@ -41,7 +41,7 @@ class W6Test {
     void t3_noNumerica() {
         try (ServidorWeb s = ServidorWeb.iniciar()) {
             Respuesta r = s.post("/api/estudiantes", "nombre", "Sofia", "edad", "diecisiete", "nota", "4.2");
-            estado(r, 400, "Integer.parseInt lanza NumberFormatException: atrápala con try/catch y responde 400.");
+            estado(r, 400, "Con edad \"diecisiete\" la conversión a número falla: atrapa esa excepción y responde 400.");
             campo(r.json(), "mensaje");
         }
     }

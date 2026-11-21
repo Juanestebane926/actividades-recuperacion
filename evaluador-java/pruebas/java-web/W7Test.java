@@ -26,7 +26,7 @@ class W7Test {
     void t2_noExiste() {
         try (ServidorWeb s = ServidorWeb.iniciar()) {
             Respuesta r = s.get("/api/estudiantes", "nombre", "Zoe");
-            estado(r, 404, "Si buscarPorNombre devuelve null, usa response.setStatus(HttpServletResponse.SC_NOT_FOUND).");
+            estado(r, 404, "Si no se encuentra el estudiante, responde 404 con el mensaje de la tarea.");
             igual("Estudiante no encontrado", campo(r.json(), "mensaje").asText(), "Campo \"mensaje\"");
         }
     }
@@ -41,7 +41,7 @@ class W7Test {
             igual(3.5, campo(j, "promedio").asDouble(), "Campo \"promedio\" de (4.6 + 3.1 + 2.8) / 3");
             igual(3, campo(j, "total").asInt(), "Campo \"total\"");
             s.post("/api/estudiantes", "nombre", "Sofia", "edad", "17", "nota", "5");
-            igual(3.875, campo(s.get("/api/estudiantes").json(), "promedio").asDouble(), "Promedio después de agregar una nota 5.0");
+            igual(3.875, campo(s.get("/api/estudiantes").json(), "promedio").asDouble(), "Después de un POST válido el promedio no cambió como se esperaba: revisa que tu doPost del paso 6 guarde el estudiante (vuelve a ese paso y compruébalo)");
         }
     }
 }

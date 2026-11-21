@@ -23,7 +23,6 @@
       {
         id: 'r1',
         nPruebas: 3,
-        nPruebas: 3,
         titulo: 'Componentes y props',
         archivos: ['Saludo.jsx'],
         compilar: ['Saludo.jsx'],
@@ -49,7 +48,6 @@ const info = \`\${nombre} tiene \${edad} años\`;   // "Juan tiene 20 años"</co
       {
         id: 'r2',
         nPruebas: 3,
-        nPruebas: 3,
         titulo: 'Render condicional: EstadoBadge',
         archivos: ['EstadoBadge.jsx'],
         compilar: ['EstadoBadge.jsx'],
@@ -73,7 +71,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
       },
       {
         id: 'r3',
-        nPruebas: 4,
         nPruebas: 4,
         titulo: 'Listas con map y key',
         archivos: ['ListaEstudiantes.jsx', 'EstadoBadge.jsx'],
@@ -101,7 +98,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
       {
         id: 'r4',
         nPruebas: 3,
-        nPruebas: 3,
         titulo: 'Estado con useState: filtrar aprobados',
         archivos: ['FiltroAprobados.jsx', 'ListaEstudiantes.jsx'],
         compilar: ['EstadoBadge.jsx', 'ListaEstudiantes.jsx', 'FiltroAprobados.jsx'],
@@ -122,11 +118,11 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>El estado <code>soloAprobados</code> empieza en <code>false</code>.</li>
             <li>Usa <code>filter</code> para quedarte con los aprobados.</li>
             <li>El botón invierte el valor de <code>soloAprobados</code>.</li>
-          </ol>`,
+          </ol>
+          <p>Este paso también usa tu <code>EstadoBadge</code> del paso 2: si no lo completaste, vuelve a ese paso.</p>`,
       },
       {
         id: 'r5',
-        nPruebas: 4,
         nPruebas: 4,
         titulo: 'Formularios controlados',
         archivos: ['FormularioEstudiante.jsx'],
@@ -157,7 +153,6 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
       {
         id: 'r6',
         nPruebas: 4,
-        nPruebas: 4,
         titulo: 'Integración: la App completa con useEffect',
         archivos: ['App.jsx', 'FormularioEstudiante.jsx', 'FiltroAprobados.jsx'],
         compilar: ['Saludo.jsx', 'EstadoBadge.jsx', 'ListaEstudiantes.jsx', 'FiltroAprobados.jsx', 'FormularioEstudiante.jsx', 'App.jsx'],
@@ -179,6 +174,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
             <li>En <code>agregar</code>, copia la lista con spread.</li>
             <li>Pásale <code>agregar</code> al formulario por la prop <code>onAgregar</code>.</li>
           </ol>
+          <p>La app completa usa los componentes de los pasos 1 a 5: si alguno quedó sin completar, vuelve a ese paso.</p>
           <p>Usa <b>Ejecutar</b> para probar tu app completa: agrega un estudiante y filtra. Cuando este paso pase, ve a <b>Nota</b>.</p>`,
       }
     ]

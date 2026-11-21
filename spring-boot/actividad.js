@@ -20,7 +20,6 @@ window.ACTIVIDAD = {
     {
       id: 'p1',
       ejecutar: {"peticiones": "GET /api/hola"},
-      ejecutar: {"peticiones": "GET /api/hola"},
       titulo: 'Tu primer endpoint: GET /api/hola',
       archivos: ['HolaController.java'],
       compilar: ['HolaController.java'],
@@ -57,7 +56,6 @@ public class SaludoController {
     {
       id: 'p2',
       ejecutar: {"peticiones": "GET /api/saludo?nombre=Ana\nGET /api/saludo"},
-      ejecutar: {"peticiones": "GET /api/saludo?nombre=Ana\nGET /api/saludo"},
       titulo: 'Recibir datos por la URL con @RequestParam',
       archivos: ['SaludoController.java', 'SaludoResponse.java'],
       compilar: ['SaludoController.java', 'SaludoResponse.java'],
@@ -87,7 +85,6 @@ public String buscar(@RequestParam(defaultValue = "todos") String filtro) {
     {
       id: 'p3',
       ejecutar: {"codigo": "VacanteService servicio = new VacanteService();\nSystem.out.println(\"listar() -> \" + servicio.listar().size() + \" vacantes\");\nVacante v = servicio.buscarPorId(2L);\nSystem.out.println(\"buscarPorId(2L) -> \" + (v == null ? \"null\" : v.getTitulo()));\nSystem.out.println(\"buscarPorId(99L) -> \" + servicio.buscarPorId(99L));\nVacante nueva = servicio.crear(new Vacante(null, \"QA Tester\", \"Datos SAS\", 2100000));\nSystem.out.println(\"crear(...) asignó el id \" + nueva.getId() + \"; ahora hay \" + servicio.listar().size() + \" vacantes\");"},
-      ejecutar: {"codigo": "VacanteService servicio = new VacanteService();\nSystem.out.println(\"listar() -> \" + servicio.listar().size() + \" vacantes\");\nVacante v = servicio.buscarPorId(2L);\nSystem.out.println(\"buscarPorId(2L) -> \" + (v == null ? \"null\" : v.getTitulo()));\nSystem.out.println(\"buscarPorId(99L) -> \" + servicio.buscarPorId(99L));\nVacante nueva = servicio.crear(new Vacante(null, \"QA Tester\", \"Datos SAS\", 2100000));\nSystem.out.println(\"crear(...) asignó el id \" + nueva.getId() + \"; ahora hay \" + servicio.listar().size() + \" vacantes\");"},
       titulo: 'La capa de servicio (@Service)',
       archivos: ['VacanteService.java', 'Vacante.java'],
       compilar: ['VacanteService.java', 'Vacante.java'],
@@ -116,7 +113,6 @@ return null;                      // la recorrí toda y no estaba</code></pre>
     },
     {
       id: 'p4',
-      ejecutar: {"peticiones": "GET /api/vacantes\nGET /api/vacantes/2\nGET /api/vacantes/99"},
       ejecutar: {"peticiones": "GET /api/vacantes\nGET /api/vacantes/2\nGET /api/vacantes/99"},
       titulo: 'Controller de vacantes: inyección, GET y @PathVariable',
       archivos: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
@@ -151,7 +147,6 @@ public ... buscarPorId(@PathVariable Long id) { ... }</code></pre>
     {
       id: 'p5',
       ejecutar: {"peticiones": "POST /api/vacantes {\"titulo\": \"QA Tester\", \"empresa\": \"Datos SAS\", \"salario\": 2100000}\nPOST /api/vacantes {\"titulo\": \"\", \"empresa\": \"X\", \"salario\": 1000000}\nGET /api/vacantes"},
-      ejecutar: {"peticiones": "POST /api/vacantes {\"titulo\": \"QA Tester\", \"empresa\": \"Datos SAS\", \"salario\": 2100000}\nPOST /api/vacantes {\"titulo\": \"\", \"empresa\": \"X\", \"salario\": 1000000}\nGET /api/vacantes"},
       titulo: 'Crear vacantes: @PostMapping, @RequestBody y 201/400',
       archivos: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
       compilar: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
@@ -164,49 +159,78 @@ Content-Type: application/json
 { "titulo": "QA Tester", "empresa": "Datos SAS", "salario": 2100000 }</code></pre>
         <p>Con <code>@RequestBody</code> Spring convierte ese JSON en un objeto <code>Vacante</code> (usa el constructor vacío y los setters). El método ya tiene esa anotación.</p>
         <h3>Validar antes de crear</h3>
-        <p>Si el título viene vacío, no creamos nada y respondemos <b>400 Bad Request</b> con un mensaje. Si todo está bien, el service crea la vacante y respondemos <b>201 Created</b> con la vacante creada (ya con su id).</p>
+        <p>Primero se revisan los datos. Si algo está mal, no se crea nada y se responde <b>400 Bad Request</b> con un mensaje. Si todo está bien, el service crea el recurso y se responde <b>201 Created</b> con el objeto creado (ya con su id).</p>
         <table class="tabla">
           <tr><th>Código</th><th>Cómo se escribe</th></tr>
           <tr><td>400</td><td><code>ResponseEntity.badRequest().body("mensaje")</code></td></tr>
           <tr><td>201</td><td><code>ResponseEntity.status(HttpStatus.CREATED).body(objeto)</code></td></tr>
         </table>
-        <p>Un texto está “vacío” si es <code>null</code> o si después de quitarle los espacios (<code>trim()</code>) no queda nada (<code>isEmpty()</code>).</p>`,
-      tarea: `<p>Dentro del método <code>crear</code>, borra <code>// TODO Paso 5</code> y <code>return null;</code> y escribe este código completando los <code>____</code>:</p>
-<pre class="ejemplo"><code>if (vacante.getTitulo() == null || vacante.getTitulo().trim().____()) {
-    return ResponseEntity.badRequest().body("El título es obligatorio");
-}
-Vacante creada = vacanteService.____(vacante);
-return ResponseEntity.status(HttpStatus.____).body(creada);</code></pre>
-        <p>Pruébalo con <b>Ejecutar</b>: verás un POST válido (201) y uno con título vacío (400).</p>`,
+        <p>Así se vería en otro caso: una tienda que crea <b>productos</b> y no acepta precios de cero o negativos. Tu tarea es con vacantes, y lo que se valida es el título.</p>
+<pre class="ejemplo"><code>@PostMapping
+public ResponseEntity&lt;?&gt; crear(@RequestBody Producto producto) {
+    if (producto.getPrecio() &lt;= 0) {
+        return ResponseEntity.badRequest().body("El precio debe ser mayor que cero");
+    }
+    Producto guardado = productoService.guardar(producto);
+    return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
+}</code></pre>
+        <h3>¿Cuándo está vacío un texto?</h3>
+        <p>Un <code>String</code> puede faltar (<code>null</code>), estar vacío (<code>""</code>) o tener solo espacios (<code>"   "</code>), y los tres casos cuentan como vacío. <code>trim()</code> quita los espacios del inicio y del final, e <code>isEmpty()</code> dice si no queda ningún carácter. Revisa primero el <code>null</code>: llamar a un método sobre un <code>null</code> lanza <code>NullPointerException</code>.</p>`,
+      tarea: `<p>Escribe el cuerpo del método <code>crear</code> del controller, en lugar del comentario <code>// Escribe aquí tu código del paso 5</code> y del <code>return null;</code>:</p>
+          <ol>
+            <li>Si el título de la vacante falta, está vacío o solo tiene espacios, responde <b>400</b> con este texto exacto: <code>El título es obligatorio</code>.</li>
+            <li>Si el título está bien, pídele al service que cree la vacante (ese método lo hiciste en el paso 3).</li>
+            <li>Responde <b>201</b> con la vacante creada.</li>
+          </ol>
+          <p>Pruébalo con <b>Ejecutar</b>: verás un POST válido (201) y uno con título vacío (400).</p>`,
     },
     {
       id: 'p6',
-      ejecutar: {"peticiones": "GET /api/vacantes?empresa=tech\nDELETE /api/vacantes/1\nDELETE /api/vacantes/99\nGET /api/vacantes"},
       ejecutar: {"peticiones": "GET /api/vacantes?empresa=tech\nDELETE /api/vacantes/1\nDELETE /api/vacantes/99\nGET /api/vacantes"},
       titulo: 'Integración: filtro por empresa y DELETE',
       archivos: ['VacanteService.java', 'VacanteController.java', 'Vacante.java'],
       compilar: ['VacanteController.java', 'VacanteService.java', 'Vacante.java'],
       nPruebas: 4,
       explicacion: `
-        <p>Último paso: juntas todo lo anterior (service + controller + parámetros + códigos HTTP).</p>
+        <p>Último paso: juntas todo lo anterior (service + controller + parámetros + códigos HTTP). Los ejemplos son de otros casos para que veas la idea; tú la aplicas a las vacantes.</p>
         <h3>A. En el service (<code>VacanteService.java</code>)</h3>
-        <p><b>buscarPorEmpresa</b>: recorre la lista y agrega a <code>resultado</code> las vacantes cuya empresa contiene el texto, sin importar mayúsculas:</p>
-<pre class="ejemplo"><code>for (Vacante v : vacantes) {
-    if (v.getEmpresa().toLowerCase().contains(empresa.toLowerCase())) {
-        resultado.add(v);
+        <p><b>Filtrar una lista</b>: se recorre y se agregan a una lista nueva los elementos que cumplen la condición. Por ejemplo, los productos cuyo nombre <b>empieza</b> con un texto, sin importar mayúsculas:</p>
+<pre class="ejemplo"><code>List&lt;Producto&gt; encontrados = new ArrayList&lt;&gt;();
+for (Producto p : productos) {
+    if (p.getNombre().toLowerCase().startsWith(texto.toLowerCase())) {
+        encontrados.add(p);
     }
-}</code></pre>
-        <p><b>eliminar</b>: reutiliza <code>buscarPorId</code>. Si no existe devuelve <code>false</code>; si existe la quita con <code>vacantes.remove(v)</code> y devuelve <code>true</code>.</p>
+}
+return encontrados;</code></pre>
+        <p>En tu caso la condición es que la empresa <b>contenga</b> el texto. <code>String</code> tiene <code>startsWith</code>, <code>endsWith</code> y <code>contains</code>.</p>
+        <p><b>Eliminar</b>: reutiliza lo que ya tienes. Si <code>buscarPorId</code> no encuentra la vacante, devuelve <code>false</code>; si la encuentra, quítala de la lista (<code>List</code> tiene un método para quitar un elemento) y devuelve <code>true</code>.</p>
         <h3>B. En el controller (<code>VacanteController.java</code>)</h3>
-        <p><b>Filtro opcional</b>: cambia <code>listar()</code> para que reciba <code>@RequestParam(required = false) String empresa</code>. Si <code>empresa</code> no es <code>null</code>, devuelve <code>vacanteService.buscarPorEmpresa(empresa)</code>; si es null, la lista completa. Así funcionan <code>GET /api/vacantes</code> y <code>GET /api/vacantes?empresa=tech</code>.</p>
-        <p><b>DELETE</b>: agrega un método nuevo donde está <code>// TODO Paso 6</code>:</p>
-<pre class="ejemplo"><code>@DeleteMapping("/{id}")
-public ResponseEntity&lt;Void&gt; eliminar(@PathVariable Long id) {
-    if (vacanteService.eliminar(id)) {
-        return ResponseEntity.noContent().build();   // 204: borrado, sin cuerpo
+        <p><b>Parámetro opcional</b>: con <code>required = false</code> el parámetro deja de ser obligatorio, y si no llega en la URL vale <code>null</code>. Por ejemplo:</p>
+<pre class="ejemplo"><code>@GetMapping("/saludo")
+public String saludar(@RequestParam(required = false) String nombre) {
+    if (nombre == null) {
+        return "Hola";               // GET /saludo
     }
-    return ResponseEntity.notFound().build();        // 404: no existía
-}</code></pre>`,
+    return "Hola, " + nombre;        // GET /saludo?nombre=Ana
+}</code></pre>
+        <p>Con la misma idea haces que <code>GET /api/vacantes</code> devuelva todas y <code>GET /api/vacantes?empresa=tech</code> solo las que coinciden.</p>
+        <p><b>DELETE</b>: es un endpoint nuevo con <code>@DeleteMapping</code>. Responde <b>204</b> si borró y <b>404</b> si no existía:</p>
+        <table class="tabla">
+          <tr><th>Código</th><th>Cómo se escribe</th></tr>
+          <tr><td>204 (borrado, sin cuerpo)</td><td><code>ResponseEntity.noContent().build()</code></td></tr>
+          <tr><td>404 (no existía)</td><td><code>ResponseEntity.notFound().build()</code></td></tr>
+        </table>
+        <p>Ejemplo con productos, cuyo service tiene métodos distintos a los tuyos:</p>
+<pre class="ejemplo"><code>@DeleteMapping("/{id}")
+public ResponseEntity&lt;Void&gt; borrar(@PathVariable Long id) {
+    Producto p = productoService.buscar(id);
+    if (p == null) {
+        return ResponseEntity.notFound().build();
+    }
+    productoService.quitar(p);
+    return ResponseEntity.noContent().build();
+}</code></pre>
+        <p>El tuyo va dentro de la clase, donde dice <code>// Escribe aquí el endpoint DELETE /api/vacantes/{id}</code>.</p>`,
       tarea: `<ol>
           <li>Completa <code>buscarPorEmpresa</code> y <code>eliminar</code> en <code>VacanteService.java</code>.</li>
           <li>Agrega el filtro opcional <code>empresa</code> a <code>listar()</code> del controller.</li>

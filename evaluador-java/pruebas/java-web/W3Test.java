@@ -53,6 +53,6 @@ class W3Test {
         igual("Luisa", campo(j, "nombre").asText(), "Campo \"nombre\"");
         igual(19, campo(j, "edad").asInt(), "Campo \"edad\"");
         igual(2.8, campo(j, "nota").asDouble(), "Campo \"nota\"");
-        igual("Reprobado", campo(j, "estado").asText(), "Campo \"estado\" (usa getEstadoAcademico())");
+        igual("Reprobado", campo(j, "estado").asText(), "Campo \"estado\" (debe salir del método de la clase que ya lo calcula)");
     }
 }

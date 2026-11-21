@@ -618,3 +618,11 @@ html.dark .pista-cab .ico { color: var(--resaltador); }
 .pista-costo { margin-left: auto; font-size: var(--t-xs); color: var(--muted-foreground); white-space: nowrap; }
 .pista-texto { font-size: var(--t-base); line-height: 1.55; }
 .pistas + .aviso, .pista + .aviso { margin-top: 8px; }
+
+/* Cuadro de buscar / reemplazar / ir a la línea del editor (Ctrl+F, Ctrl+H, Ctrl+L) */
+.CodeMirror-dialog { background: var(--ide-barra); color: #e3e7f3; font: 400 var(--t-sm) var(--sans); padding: 6px 10px; }
+.CodeMirror-dialog-top { border-bottom: 1px solid var(--ide-borde); }
+.CodeMirror-dialog input { font-family: var(--mono); color: #fff; background: #0e1322; border: 1px solid oklch(1 0 0 / 14%); border-radius: 6px; padding: 3px 8px; margin: 0 6px; width: 16em; }
+.CodeMirror-dialog button { font: 700 var(--t-xs) var(--sans); border-radius: 6px; border: 1px solid oklch(1 0 0 / 16%); background: transparent; color: #e3e7f3; padding: 2px 8px; margin-left: 4px; }
+.CodeMirror-dialog .CodeMirror-search-hint { color: #9aa3bd; }
+.cm-searching { background: rgb(255 212 59 / 30%); }

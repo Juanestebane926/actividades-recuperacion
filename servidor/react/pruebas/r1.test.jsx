@@ -10,13 +10,13 @@ test('<Saludo nombre="Ana" /> muestra "Hola, Ana" en un <h2>', () => {
 
 test('Saludo usa la prop (no un nombre fijo)', () => {
   render(<Saludo nombre="Valentina" />);
-  pista('Con nombre="Valentina" el <h2> debe decir "Hola, Valentina": usa {nombre}.', () =>
+  pista('Con nombre="Valentina" el <h2> debe decir "Hola, Valentina": muestra la prop que recibes, no un texto fijo.', () =>
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Hola, Valentina'));
 });
 
 test('<Perfil nombre="Ana" edad={18} /> muestra "Ana tiene 18 años"', () => {
   const { container, unmount } = render(<Perfil nombre="Ana" edad={18} />);
-  pista('Arma el texto con un template literal: `${nombre} tiene ${edad} años`', () =>
+  pista('Arma el texto con las props nombre y edad dentro de un template literal (comillas invertidas).', () =>
     expect(container.querySelector('p')?.textContent).toBe('Ana tiene 18 años'));
   unmount();
   const otro = render(<Perfil nombre="Luis" edad={25} />);

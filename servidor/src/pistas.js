@@ -47,7 +47,7 @@ export const PISTAS = {
     w1: [
       'Repasa los operadores de comparación de la explicación: necesitas uno que incluya el 3.0, porque con 3.0 se aprueba.',
       'Los textos que devuelves se comparan letra por letra con los de la tarea: van entre comillas dobles y con mayúscula inicial.',
-      'En <code>nivel</code>, cuando el programa llega al <code>else if</code> ya sabe que la nota no era excelente. Mira en la tabla cuál es el límite inferior del rango «Aceptable».',
+      'En <code>nivel</code>, cuando el programa llega al <code>else if</code> ya sabe que la nota no era excelente. Mira en el comentario del código cuál es el límite inferior del rango «Aceptable».',
     ],
     w2: [
       'Para recorrer un arreglo necesitas un <code>for</code> que vaya desde la primera posición hasta antes de su longitud. En cada vuelta acumulas en <code>suma</code> el valor de esa posición.',
@@ -75,9 +75,9 @@ export const PISTAS = {
       'El código de «creado» es una constante de <code>HttpServletResponse</code> (está en la tabla de la explicación). Todo va dentro del <code>try</code> que ya existe, porque ahí está <code>out</code>.',
     ],
     w7: [
-      'Lee el parámetro de búsqueda al inicio de <code>doGet</code>. Si llega, respondes solo con los estudiantes que coinciden; si no, se mantiene lo de antes.',
+      'Lee el parámetro de búsqueda al inicio de <code>doGet</code>. Si llega, respondes solo con el estudiante que encontraste (o 404); si no, se mantiene lo de antes.',
       'Para el promedio usa la clase <code>Estadisticas</code> del paso 2. Si el compilador dice <i>cannot find symbol</i> con ese nombre, revisa los <code>import</code>.',
-      'Si el promedio sale mal, el problema puede estar en tu método del paso 2: vuelve a ese paso y compruébalo.',
+      'Si el promedio inicial está bien pero el que se ve después de agregar un estudiante no, el problema es el POST del paso 6. Si el inicial también está mal, revisa tu método del paso 2.',
     ],
   },
 
@@ -93,7 +93,7 @@ export const PISTAS = {
       'Las pruebas comparan las clases y los textos letra por letra: cópialos tal cual aparecen en la tarea.',
     ],
     r3: [
-      'Una lista vacía tiene longitud cero; con eso decides si muestras el mensaje de que no hay estudiantes.',
+      'Con la longitud de la lista decides si muestras el mensaje de que no hay estudiantes.',
       'Para convertir cada estudiante en un <code>&lt;li&gt;</code> se usa el método de los arreglos que transforma elemento por elemento; está en la explicación.',
       'Cada elemento de una lista en React necesita una <code>key</code> única: usa un dato del estudiante que nunca se repita. Al badge pásale la nota de ese estudiante.',
     ],
@@ -105,7 +105,7 @@ export const PISTAS = {
     r5: [
       'Al enviarse, un formulario recarga la página. El evento tiene un método que lo evita: llámalo al inicio.',
       'Lo que se escribe en un input siempre es texto, pero la nota debe llegar como número. Después de agregar, deja los campos vacíos con sus funciones <code>set</code>.',
-      'En un input controlado, <code>onChange</code> recibe el evento, y el texto escrito está en <code>e.target.value</code>.',
+      'En un input controlado, <code>onChange</code> recibe el evento. Repasa en la explicación qué propiedad del input que cambió trae el texto escrito.',
     ],
     r6: [
       'El estado de la App empieza con la lista inicial que ya está definida arriba del componente.',

@@ -16,18 +16,18 @@ test('Cada estudiante tiene su EstadoBadge correcto', () => {
   const { container } = render(<ListaEstudiantes estudiantes={ESTUDIANTES()} />);
   const li = container.querySelectorAll('li');
   pista('Primero haz que se vean los 3 <li>.', () => expect(li).toHaveLength(3));
-  pista('Dentro de cada <li> usa <EstadoBadge nota={est.nota} />.', () => {
+  pista('Cada <li> debe mostrar su EstadoBadge con la nota de ese estudiante.', () => {
     expect(li[0].querySelector('span')?.textContent).toBe('Aprobado');
     expect(li[2].querySelector('span')?.textContent).toBe('Reprobado');
   });
 });
 
-test('Usa key={est.id} en cada <li> (sin advertencias de React)', () => {
+test('Cada <li> tiene una key única (sin advertencias de React)', () => {
   render(<ListaEstudiantes estudiantes={ESTUDIANTES()} />);
   const avisoKey = erroresDeReact().find(m => /unique "key" prop/.test(m));
-  pista('React avisó que falta la key: agrega key={est.id} al <li>.', () => expect(avisoKey).toBeUndefined());
-  pista('Usa el id del estudiante como key: key={est.id} (no el índice).', () =>
-    expect(fuente('ListaEstudiantes.jsx')).toMatch(/key\s*=\s*\{\s*est\.id\s*\}/));
+  pista('React avisó que a los <li> les falta la key.', () => expect(avisoKey).toBeUndefined());
+  pista('La key debe ser un dato que identifique a cada estudiante y nunca se repita (no su posición en la lista).', () =>
+    expect(fuente('ListaEstudiantes.jsx')).toMatch(/key\s*=\s*\{\s*\w+\.id\s*\}/));
 });
 
 test('Lista vacía → "No hay estudiantes"', () => {

@@ -19,7 +19,8 @@ public class VacanteController {
         this.vacanteService = ____;
     }
 
-    // 3. GET /api/vacantes  ->  lista completa (el service ya sabe listar)
+    // 3. GET /api/vacantes  ->  lista completa (el service ya sabe listar).
+    //    En el paso 6 le agregarás el filtro ?empresa=
     @GetMapping
     public List<Vacante> listar() {
         return ____;
@@ -35,15 +36,15 @@ public class VacanteController {
         return ResponseEntity.ok(____);
     }
 
-    // ---------------- PASO 5 ----------------
+    // ---------------- PASO 5: crear vacantes ----------------
     // POST /api/vacantes  ->  201 con la vacante creada, o 400 si falta el título
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody Vacante vacante) {
-        // TODO Paso 5
+        // Escribe aquí tu código del paso 5 (reemplaza el return null)
         return null;
     }
 
-    // ---------------- PASO 6 ----------------
-    // TODO Paso 6: DELETE /api/vacantes/{id}
+    // ---------------- PASO 6: eliminar vacantes ----------------
+    // Escribe aquí el endpoint DELETE /api/vacantes/{id}
 
 }

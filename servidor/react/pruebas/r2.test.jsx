@@ -23,5 +23,5 @@ test('Nota 2.8 → "Reprobado" con clase "badge badge-mal"', () => {
 
 test('Nota 3.0 exacta → "Aprobado"', () => {
   const s = badge(3.0);
-  pista('Con 3.0 se aprueba: compara con >= y no con >.', () => expect(s.textContent).toBe('Aprobado'));
+  pista('Con 3.0 exacto también se aprueba: revisa el operador de la comparación.', () => expect(s.textContent).toBe('Aprobado'));
 });

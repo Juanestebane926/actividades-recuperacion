@@ -16,14 +16,14 @@ class P3Test {
     @Test
     @DisplayName("VacanteService tiene @Service")
     void t1_anotacion() {
-        assertTrue(VacanteService.class.isAnnotationPresent(Service.class), "Falta la anotación @Service encima de la clase VacanteService.");
+        assertTrue(VacanteService.class.isAnnotationPresent(Service.class), "A VacanteService le falta la anotación que le dice a Spring que es un servicio.");
     }
 
     @Test
     @DisplayName("listar() devuelve las 3 vacantes iniciales")
     void t2_listar() {
         List<Vacante> l = new VacanteService().listar();
-        assertNotNull(l, "listar() devolvió null: debe devolver la lista vacantes.");
+        assertNotNull(l, "listar() devolvió null: debe entregar la lista que el servicio ya tiene guardada.");
         Http.igual(3, l.size(), "Cantidad de vacantes que devuelve listar()");
     }
 
@@ -32,7 +32,7 @@ class P3Test {
     void t3_buscar() {
         VacanteService s = new VacanteService();
         Vacante v = s.buscarPorId(2L);
-        assertNotNull(v, "buscarPorId(2L) devolvió null, pero la vacante 2 sí existe. Compara v.getId() con el id que llega por parámetro.");
+        assertNotNull(v, "buscarPorId(2L) devolvió null, pero la vacante 2 sí existe: revisa con qué comparas el id de cada vacante y cómo se comparan dos Long.");
         Http.igual("Auxiliar de soporte", v.getTitulo(), "Título de la vacante que devolvió buscarPorId(2L)");
         assertNull(s.buscarPorId(99L), "buscarPorId(99L) debe devolver null porque esa vacante no existe.");
     }
@@ -46,6 +46,6 @@ class P3Test {
         Http.igual(4L, a.getId(), "Id de la primera vacante creada");
         Vacante b = s.crear(new Vacante(null, "Diseñador UX", "Creativa", 2000000));
         Http.igual(5L, b.getId(), "Id de la segunda vacante creada");
-        Http.igual(5, s.listar().size(), "Tamaño de listar() después de crear 2 vacantes (¿las agregaste con vacantes.add?)");
+        Http.igual(5, s.listar().size(), "Tamaño de listar() después de crear 2 vacantes (¿la vacante nueva quedó guardada en la lista?)");
     }
 }

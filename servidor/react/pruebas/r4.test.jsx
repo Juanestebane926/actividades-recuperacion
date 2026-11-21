@@ -23,6 +23,6 @@ test('Otro clic vuelve a mostrar todos', () => {
   const { container } = render(<FiltroAprobados estudiantes={ESTUDIANTES()} />);
   fireEvent.click(screen.getByRole('button'));
   fireEvent.click(screen.getByRole('button'));
-  pista('El botón debe invertir el valor: setSoloAprobados(!soloAprobados).', () =>
+  pista('El botón debe pasar el estado a su valor contrario en cada clic.', () =>
     expect(conteo(container)).toBe('Mostrando 3 de 3'));
 });

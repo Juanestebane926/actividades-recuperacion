@@ -19,7 +19,6 @@ window.ACTIVIDAD = {
     {
       id: 'w1',
       ejecutar: {"codigo": "double[] notas = {4.5, 3.0, 2.9, 4.8};\nfor (double n : notas) {\n    System.out.println(n + \" -> estado: \" + Calificaciones.estado(n) + \", nivel: \" + Calificaciones.nivel(n));\n}"},
-      ejecutar: {"codigo": "double[] notas = {4.5, 3.0, 2.9, 4.8};\nfor (double n : notas) {\n    System.out.println(n + \" -> estado: \" + Calificaciones.estado(n) + \", nivel: \" + Calificaciones.nivel(n));\n}"},
       titulo: 'Condicionales: ¿aprobó o no?',
       archivos: ['Calificaciones.java'],
       compilar: ['Calificaciones.java'],
@@ -52,7 +51,6 @@ if (edad &lt; 13) {
     {
       id: 'w2',
       ejecutar: {"codigo": "double[] notas = {4.0, 3.0, 5.0, 2.5};\nSystem.out.println(\"promedio = \" + Estadisticas.promedio(notas));\nSystem.out.println(\"aprobados = \" + Estadisticas.contarAprobados(notas));\nSystem.out.println(\"promedio de {} = \" + Estadisticas.promedio(new double[0]));"},
-      ejecutar: {"codigo": "double[] notas = {4.0, 3.0, 5.0, 2.5};\nSystem.out.println(\"promedio = \" + Estadisticas.promedio(notas));\nSystem.out.println(\"aprobados = \" + Estadisticas.contarAprobados(notas));\nSystem.out.println(\"promedio de {} = \" + Estadisticas.promedio(new double[0]));"},
       titulo: 'Ciclos: promedio y aprobados',
       archivos: ['Estadisticas.java'],
       compilar: ['Estadisticas.java'],
@@ -84,7 +82,6 @@ for (int i = 0; i &lt; edades.length; i++) {
     {
       id: 'w3',
       ejecutar: {"codigo": "Estudiante e = new Estudiante(\"Ana\", 18, 4.6);\nSystem.out.println(\"getNombre() -> \" + e.getNombre());\nSystem.out.println(\"getEdad() -> \" + e.getEdad());\nSystem.out.println(\"getNota() -> \" + e.getNota());\nSystem.out.println(\"getEstadoAcademico() -> \" + e.getEstadoAcademico());\nSystem.out.println(\"toString() -> \" + e);"},
-      ejecutar: {"codigo": "Estudiante e = new Estudiante(\"Ana\", 18, 4.6);\nSystem.out.println(\"getNombre() -> \" + e.getNombre());\nSystem.out.println(\"getEdad() -> \" + e.getEdad());\nSystem.out.println(\"getNota() -> \" + e.getNota());\nSystem.out.println(\"getEstadoAcademico() -> \" + e.getEstadoAcademico());\nSystem.out.println(\"toString() -> \" + e);"},
       titulo: 'Clases y objetos: la clase Estudiante',
       archivos: ['Estudiante.java'],
       compilar: ['Estudiante.java'],
@@ -110,7 +107,6 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
     },
     {
       id: 'w4',
-      ejecutar: {"codigo": "EstudianteDAO dao = new EstudianteDAO();\nSystem.out.println(\"total() al inicio -> \" + dao.total());\ndao.agregar(new Estudiante(\"Ana\", 18, 4.6));\ndao.agregar(new Estudiante(\"Pedro\", 20, 3.1));\nSystem.out.println(\"total() después de agregar 2 -> \" + dao.total());\nSystem.out.println(\"buscarPorNombre(\\\"pedro\\\") -> \" + dao.buscarPorNombre(\"pedro\"));\nSystem.out.println(\"buscarPorNombre(\\\"Zoe\\\") -> \" + dao.buscarPorNombre(\"Zoe\"));"},
       ejecutar: {"codigo": "EstudianteDAO dao = new EstudianteDAO();\nSystem.out.println(\"total() al inicio -> \" + dao.total());\ndao.agregar(new Estudiante(\"Ana\", 18, 4.6));\ndao.agregar(new Estudiante(\"Pedro\", 20, 3.1));\nSystem.out.println(\"total() después de agregar 2 -> \" + dao.total());\nSystem.out.println(\"buscarPorNombre(\\\"pedro\\\") -> \" + dao.buscarPorNombre(\"pedro\"));\nSystem.out.println(\"buscarPorNombre(\\\"Zoe\\\") -> \" + dao.buscarPorNombre(\"Zoe\"));"},
       titulo: 'ArrayList y el patrón DAO',
       archivos: ['EstudianteDAO.java', 'Estudiante.java'],
@@ -140,7 +136,6 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
     },
     {
       id: 'w5',
-      ejecutar: {"peticiones": "GET /api/estudiantes"},
       ejecutar: {"peticiones": "GET /api/estudiantes"},
       titulo: 'Servlet: GET /api/estudiantes en JSON',
       archivos: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
@@ -176,7 +171,6 @@ public class EstudianteServlet extends HttpServlet { ... }</code></pre>
     {
       id: 'w6',
       ejecutar: {"peticiones": "POST /api/estudiantes nombre=Sofia&edad=17&nota=4.2\nPOST /api/estudiantes edad=17&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=diecisiete&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=17&nota=7\nGET /api/estudiantes"},
-      ejecutar: {"peticiones": "POST /api/estudiantes nombre=Sofia&edad=17&nota=4.2\nPOST /api/estudiantes edad=17&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=diecisiete&nota=4.2\nPOST /api/estudiantes nombre=Sofia&edad=17&nota=7\nGET /api/estudiantes"},
       titulo: 'POST: crear estudiantes con validaciones',
       archivos: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
       compilar: ['EstudianteServlet.java', 'EstudianteDAO.java', 'Estudiante.java'],
@@ -190,71 +184,72 @@ public class EstudianteServlet extends HttpServlet { ... }</code></pre>
           <tr><td>Se creó bien</td><td>201</td><td><code>HttpServletResponse.SC_CREATED</code></td></tr>
           <tr><td>Datos inválidos</td><td>400</td><td><code>HttpServletResponse.SC_BAD_REQUEST</code></td></tr>
         </table>
-        <p>Siempre se valida <b>antes</b> de guardar, y si algo falla se responde y se termina con <code>return;</code>.</p>`,
-      tarea: `<p>En <code>doPost</code>, reemplaza <code>// TODO Paso 6</code> por este código y completa los <code>____</code>:</p>
+        <p>Siempre se valida <b>antes</b> de guardar, y si algo falla se responde y se termina con <code>return;</code>.</p>
+        <h3>Ejemplo con otro recurso</h3>
+        <p>Un servlet que crea <b>cursos</b> con nombre y cupo. Tu tarea es con estudiantes, que tienen más datos y otras reglas:</p>
 <pre class="ejemplo"><code>String nombre = request.getParameter("nombre");
-String edadTexto = request.getParameter("edad");
-String notaTexto = request.getParameter("nota");
-
 if (nombre == null || nombre.trim().isEmpty()) {
     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    out.print("{\\"mensaje\\":\\"El nombre es obligatorio\\"}");
+    out.print("{\\"mensaje\\":\\"Falta el nombre del curso\\"}");
     return;
 }
 try {
-    int edad = Integer.____(edadTexto);
-    double nota = Double.____(notaTexto);
-    if (nota &lt; 0 || nota &gt; 5) {
+    int cupo = Integer.parseInt(request.getParameter("cupo"));
+    if (cupo &lt; 1) {
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        out.print("{\\"mensaje\\":\\"La nota debe estar entre 0 y 5\\"}");
+        out.print("{\\"mensaje\\":\\"El cupo debe ser al menos 1\\"}");
         return;
     }
-    Estudiante nuevo = new Estudiante(nombre.trim(), edad, nota);
-    dao.____(nuevo);
-    response.setStatus(HttpServletResponse.____);
-    out.print("{\\"mensaje\\":\\"Estudiante creado\\",\\"estudiante\\":" + nuevo + "}");
+    Curso nuevo = new Curso(nombre.trim(), cupo);
+    cursos.add(nuevo);
+    response.setStatus(HttpServletResponse.SC_CREATED);
+    out.print("{\\"curso\\":" + nuevo + "}");
 } catch (NumberFormatException ex) {
     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-    out.print("{\\"mensaje\\":\\"Edad y nota deben ser numericas\\"}");
-}</code></pre>
-        <p>Con <b>Ejecutar</b> Tomcat recibe las peticiones de <code>peticiones.http</code> (varios POST de prueba) y verás sus respuestas reales. Puedes agregar las tuyas.</p>`,
+    out.print("{\\"mensaje\\":\\"El cupo debe ser un número\\"}");
+}</code></pre>`,
+      tarea: `<p>En <code>doPost</code>, en lugar del comentario <code>// Escribe aquí tu código del paso 6</code>, lee los parámetros <code>nombre</code>, <code>edad</code> y <code>nota</code> y:</p>
+          <ol>
+            <li>Si el nombre falta o está vacío (también si solo tiene espacios), responde <b>400</b> con <code>{"mensaje":"El nombre es obligatorio"}</code>.</li>
+            <li>Convierte la edad a <code>int</code> y la nota a <code>double</code>. Si alguna no es un número, responde <b>400</b> con un <code>"mensaje"</code> que lo explique.</li>
+            <li>Si la nota no está entre 0 y 5, responde <b>400</b> con <code>{"mensaje":"La nota debe estar entre 0 y 5"}</code> y no guardes nada.</li>
+            <li>Si todo está bien, crea el <code>Estudiante</code> (con el nombre sin espacios sobrantes), guárdalo con el DAO y responde <b>201</b> con <code>{"mensaje":"Estudiante creado","estudiante":{...}}</code>. El <code>toString()</code> de <code>Estudiante</code> (paso 3) ya arma el JSON del estudiante.</li>
+          </ol>
+          <p>Todo va dentro del <code>try (PrintWriter out = ...)</code> que ya existe, porque usa <code>out</code>. Con <b>Ejecutar</b> Tomcat recibe las peticiones de <code>peticiones.http</code> (varios POST de prueba) y verás sus respuestas reales. Puedes agregar las tuyas.</p>`,
     },
     {
       id: 'w7',
-      ejecutar: {"peticiones": "GET /api/estudiantes?nombre=pedro\nGET /api/estudiantes?nombre=Zoe\nGET /api/estudiantes"},
       ejecutar: {"peticiones": "GET /api/estudiantes?nombre=pedro\nGET /api/estudiantes?nombre=Zoe\nGET /api/estudiantes"},
       titulo: 'Integración: búsqueda por nombre y promedio',
       archivos: ['EstudianteServlet.java', 'Estadisticas.java', 'EstudianteDAO.java', 'Estudiante.java'],
       compilar: ['EstudianteServlet.java', 'Estadisticas.java', 'EstudianteDAO.java', 'Estudiante.java'],
       nPruebas: 3,
       explicacion: `
-        <p>Último paso: unes todo lo anterior en el <code>doGet</code>.</p>
-        <h3>A. Buscar por nombre: <code>GET /api/estudiantes?nombre=pedro</code></h3>
-        <p>En <code>doGet</code>, donde dice <code>// TODO Paso 7</code>, lee el parámetro <code>nombre</code>. Si vino, busca con el DAO y responde solo ese estudiante, o <b>404</b> si no existe. El <code>return;</code> evita que después se envíe también la lista.</p>
-<pre class="ejemplo"><code>String buscado = request.getParameter("nombre");
-if (buscado != null) {
-    Estudiante e = dao.buscarPorNombre(buscado);
+        <p>Último paso: unes todo lo anterior en el <code>doGet</code>. Los ejemplos son de otro caso (cursos); tú los aplicas a los estudiantes.</p>
+        <h3>A. Responder un solo elemento o la lista</h3>
+        <p>Un mismo <code>doGet</code> puede atender <code>GET /api/cursos</code> (la lista) y <code>GET /api/cursos?codigo=MAT1</code> (uno solo). Se lee el parámetro al inicio: si llegó, se responde ese elemento (o <b>404</b> si no existe) y se termina con <code>return;</code>, para que no se envíe también la lista.</p>
+<pre class="ejemplo"><code>String codigo = request.getParameter("codigo");
+if (codigo != null) {
+    Curso c = buscarCurso(codigo);
     try (PrintWriter out = response.getWriter()) {
-        if (e == null) {
+        if (c == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            out.print("{\\"mensaje\\":\\"Estudiante no encontrado\\"}");
+            out.print("{\\"mensaje\\":\\"Curso no encontrado\\"}");
         } else {
-            out.print("{\\"estudiante\\":" + e + "}");
+            out.print("{\\"curso\\":" + c + "}");
         }
     }
     return;
 }</code></pre>
-        <h3>B. Agregar el promedio a la lista</h3>
-        <p>Usa tu clase <code>Estadisticas</code> del paso 2 con las notas del DAO. Primero <b>importa</b> la clase (arriba, junto a los otros <code>import</code>):</p>
-<pre class="ejemplo"><code>import com.mycompany.recuperacion.util.Estadisticas;</code></pre>
-        <p>Luego, justo después de la línea que agrega <code>"total"</code>, agrega:</p>
-<pre class="ejemplo"><code>json.append("\\"promedio\\":").append(Estadisticas.promedio(dao.notas())).append(",");</code></pre>
-        <p>Resultado: <code>{"total":3,"promedio":3.5,"estudiantes":[...]}</code></p>`,
+        <h3>B. Usar una clase de otro paquete</h3>
+        <p>Para usar en el servlet una clase de otro paquete hay que <b>importarla</b>, arriba con los otros <code>import</code>: <code>import paquete.Clase;</code>. Después, sus métodos <code>static</code> se llaman con el nombre de la clase, como <code>Math.max(a, b)</code>.</p>
+        <p>Para agregar un campo al JSON que arma el <code>StringBuilder</code>, se agregan su nombre entre comillas, los dos puntos, el valor y la coma, en el lugar donde debe ir:</p>
+<pre class="ejemplo"><code>json.append("\\"maximo\\":").append(Math.max(a, b)).append(",");</code></pre>`,
       tarea: `<ol>
-          <li>Agrega la búsqueda por nombre (200 con el estudiante o 404).</li>
-          <li>Importa <code>Estadisticas</code> y agrega el campo <code>"promedio"</code> a la lista.</li>
+          <li>Al inicio de <code>doGet</code>, donde dice <code>// Paso 7: aquí va la búsqueda por nombre</code>, lee el parámetro <code>nombre</code>. Si llegó, busca al estudiante con el DAO (paso 4) y responde <code>{"estudiante":{...}}</code>, o <b>404</b> con <code>{"mensaje":"Estudiante no encontrado"}</code> si no existe.</li>
+          <li>Agrega a la lista el campo <code>"promedio"</code>, justo después de <code>"total"</code>, con el promedio de las notas calculado por tu clase <code>Estadisticas</code> del paso 2. Está en el paquete <code>com.mycompany.recuperacion.util</code>, y el DAO ya tiene un método que devuelve todas las notas.</li>
         </ol>
-        <p>Cuando pase, ve a <b>Nota</b> para calificar toda la actividad.</p>`,
+        <p>Así queda la lista: <code>{"total":3,"promedio":3.5,"estudiantes":[...]}</code>. Cuando pase, ve a <b>Nota</b> para calificar toda la actividad.</p>`,
     }
   ]
 };

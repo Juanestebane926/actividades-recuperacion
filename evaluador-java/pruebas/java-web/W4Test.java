@@ -39,7 +39,7 @@ class W4Test {
         d.agregar(new Estudiante("Ana", 18, 4.6));
         d.agregar(new Estudiante("Pedro", 20, 3.1));
         Estudiante p = d.buscarPorNombre("pedro");
-        assertNotNull(p, "buscarPorNombre(\"pedro\") devolvió null; debe encontrar a \"Pedro\" (usa equalsIgnoreCase).");
+        assertNotNull(p, "buscarPorNombre(\"pedro\") devolvió null; debe encontrar a \"Pedro\" (la búsqueda debe ignorar mayúsculas: String tiene una variante de equals para eso).");
         igual(20, p.getEdad(), "Edad de Pedro");
         assertNull(d.buscarPorNombre("Zoe"), "buscarPorNombre(\"Zoe\") debe devolver null.");
     }

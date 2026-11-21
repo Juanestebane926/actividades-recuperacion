@@ -33,7 +33,7 @@ public class EstudianteServlet extends HttpServlet {
         // 2. Indica que la respuesta es JSON
         response.setContentType("____");
 
-        // TODO Paso 7: búsqueda por nombre (todavía no)
+        // Paso 7: aquí va la búsqueda por nombre
 
         List<Estudiante> lista = dao.listar();
         StringBuilder json = new StringBuilder();
@@ -63,7 +63,7 @@ public class EstudianteServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
 
         try (PrintWriter out = response.getWriter()) {
-            // TODO Paso 6
+            // Escribe aquí tu código del paso 6
         }
     }
 }

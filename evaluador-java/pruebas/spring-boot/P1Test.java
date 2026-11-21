@@ -17,7 +17,7 @@ class P1Test {
     @DisplayName("HolaController tiene @RestController")
     void t1_anotacion() {
         assertTrue(HolaController.class.isAnnotationPresent(RestController.class),
-                "Falta la anotación @RestController encima de la clase HolaController.");
+                "A HolaController le falta la anotación que la convierte en un controlador REST (mira el primer ejemplo de la explicación).");
     }
 
     @Test

@@ -28,7 +28,7 @@ class P6Test {
             Http.estado(r, 200);
             Http.igual(1, Http.lista(r.json(), "La respuesta").size(), "Con ?empresa=softandina, cantidad de vacantes");
             Respuesta t = app.get("/api/vacantes");
-            Http.estado(t, 200, "Sin el parámetro debe seguir funcionando: usa @RequestParam(required = false).");
+            Http.estado(t, 200, "Sin ?empresa la petición debe seguir funcionando: el parámetro tiene que ser opcional.");
             Http.igual(3, Http.lista(t.json(), "La respuesta").size(), "Sin filtro, cantidad de vacantes");
         }
     }
@@ -46,9 +46,9 @@ class P6Test {
     @DisplayName("DELETE /api/vacantes/{id} → 204 si existía, 404 si no")
     void t4_delete() {
         try (AppSpring app = AppSpring.conServicios(VacanteController.class)) {
-            Http.estado(app.delete("/api/vacantes/1"), 204, "Si se eliminó, responde ResponseEntity.noContent().build().");
+            Http.estado(app.delete("/api/vacantes/1"), 204, "Si se eliminó, la respuesta es 204 (sin contenido): revisa la tabla de códigos de la explicación.");
             Http.estado(app.get("/api/vacantes/1"), 404, "Después de borrarla, la vacante 1 ya no debe existir.");
-            Http.estado(app.delete("/api/vacantes/99"), 404, "Si no existe, responde ResponseEntity.notFound().build().");
+            Http.estado(app.delete("/api/vacantes/99"), 404, "Si la vacante no existía, responde 404, igual que en buscarPorId.");
         }
     }
 }

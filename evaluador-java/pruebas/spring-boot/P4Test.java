@@ -22,7 +22,7 @@ class P4Test {
             Field f = VacanteController.class.getDeclaredField("vacanteService");
             f.setAccessible(true);
             Object inyectado = f.get(c);
-            assertNotNull(inyectado, "El atributo vacanteService quedó en null: en el constructor asigna this.vacanteService = vacanteService;");
+            assertNotNull(inyectado, "El atributo vacanteService quedó en null: en el constructor guarda en el atributo el servicio que recibes.");
             assertSame(app.bean(VacanteService.class), inyectado,
                     "El controller no usa el VacanteService que creó Spring (¿lo creaste con new?). Recíbelo en el constructor.");
         }
@@ -43,7 +43,7 @@ class P4Test {
     void t3_porId() {
         try (AppSpring app = AppSpring.conServicios(VacanteController.class)) {
             Respuesta r = app.get("/api/vacantes/2");
-            Http.estado(r, 200, "Usa @PathVariable para recibir el {id} de la ruta.");
+            Http.estado(r, 200, "El {id} de la ruta no llegó al método: revisa la anotación del parámetro id (no es la que lee la query string).");
             Http.igual("Auxiliar de soporte", Http.campo(r.json(), "titulo").asText(), "Campo \"titulo\"");
         }
     }
@@ -52,7 +52,7 @@ class P4Test {
     @DisplayName("GET /api/vacantes/99 responde 404")
     void t4_noExiste() {
         try (AppSpring app = AppSpring.conServicios(VacanteController.class)) {
-            Http.estado(app.get("/api/vacantes/99"), 404, "Si no existe, devuelve ResponseEntity.notFound().build().");
+            Http.estado(app.get("/api/vacantes/99"), 404, "Si la vacante no existe, la respuesta debe ser 404 (no encontrado): busca en la explicación el método de ResponseEntity para ese caso.");
         }
     }
 }

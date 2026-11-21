@@ -35,7 +35,7 @@ class P2Test {
     void t3_porDefecto() {
         try (AppSpring app = AppSpring.con(SaludoController.class)) {
             Respuesta r = app.get("/api/saludo");
-            Http.estado(r, 200, "Si respondió 400 es porque el parámetro es obligatorio: usa defaultValue = \"invitado\".");
+            Http.estado(r, 200, "Respondió 400 porque, sin un valor por defecto, Spring exige el parámetro. Revisa cómo se le da un valor por defecto a @RequestParam; el valor exacto está en la tarea.");
             Http.igual("Hola, invitado", Http.campo(r.json(), "mensaje").asText(), "Sin parámetro, el campo \"mensaje\"");
         }
     }

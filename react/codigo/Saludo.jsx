@@ -6,7 +6,7 @@ export function Saludo({ ____ }) {
 }
 
 // 2. Recibe las props "nombre" y "edad" y muestra: Ana tiene 18 años
-//    Usa un template literal: `${nombre} tiene ${edad} años`
+//    Usa un template literal (comillas invertidas) con las dos props
 export function Perfil({ nombre, edad }) {
   const texto = `____`;
   return <p className="perfil">{texto}</p>;

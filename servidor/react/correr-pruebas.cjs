@@ -27,12 +27,20 @@ process.env.DEBUG_PRINT_LIMIT = '1500';
 // ---------------------------------------------------------------- consola capturada
 const consola = [];
 let erroresConsola = [];
+let excepciones = [];   // errores que el código lanzó dentro de un evento (clic, envío, onChange)
 const texto = a => a.map(x => typeof x === 'string' ? x : (x instanceof Error ? x.message : safeJson(x))).join(' ');
 function safeJson(x) { try { return JSON.stringify(x); } catch (e) { return String(x); } }
 console.log = (...a) => consola.push(texto(a));
 console.info = console.log;
 console.warn = (...a) => consola.push('⚠ ' + texto(a));
-console.error = (...a) => { const t = formato(a); erroresConsola.push(t); consola.push('✖ ' + t); };
+console.error = (...a) => {
+  // jsdom informa así un error lanzado dentro de un evento: "Error: Uncaught [TypeError: …]" con el error original en .detail
+  for (const x of a) {
+    if (x && x.detail instanceof Error) excepciones.push(x.detail);
+    else if (x instanceof Error && !/^Warning/.test(x.message)) excepciones.push(x);
+  }
+  const t = formato(a); erroresConsola.push(t); consola.push('✖ ' + t);
+};
 // React usa "Warning: ... %s" con sustituciones
 function formato(a) {
   if (typeof a[0] === 'string' && a[0].includes('%s')) { let i = 1; return a[0].replace(/%s/g, () => String(a[i++])).split('\n')[0]; }
@@ -114,6 +122,7 @@ async function correr() {
   const rtl = require('@testing-library/react');
   for (const p of pruebas) {
     erroresConsola = [];
+    excepciones = [];
     const desde = consola.length;
     document.title = '';
     let ok = true, mensaje = '';
@@ -126,6 +135,12 @@ async function correr() {
     } catch (e) {
       ok = false;
       mensaje = explicar(e);
+      // Si además el código lanzó un error dentro de un evento, eso es lo primero que hay que ver
+      const x = excepciones[0];
+      if (x && !mensaje.startsWith('Tu código lanzó')) {
+        const d = dondeOcurrio(x);
+        mensaje = `Tu código lanzó un error al escribir, hacer clic o enviar: ${x.name && x.name !== 'Error' ? x.name + ': ' : ''}${String(x.message).replace(ANSI, '')}${d ? '\n   ' + d : ''}\n\n` + mensaje;
+      }
     }
     try { for (const f of despues) await f(); } catch (e) { /* limpieza */ }
     rtl.cleanup();
