@@ -10,7 +10,7 @@ export function ListaEstudiantes({ estudiantes }) {
 
   return (
     <ul>
-      {/* 2. Recorre la lista con map. Cada <li> necesita una key única: usa el id */}
+      {/* 2. Recorre la lista con map. Cada <li> necesita una key única que nunca se repita */}
       {estudiantes.____(est => (
         <li key={____}>
           {est.nombre} - {est.nota}

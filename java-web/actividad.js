@@ -61,12 +61,13 @@ if (edad &lt; 13) {
 notas[0]       // 4.0
 notas.length   // 3</code></pre>
         <p>El ciclo <code>for</code> repite instrucciones un número definido de veces. Para recorrer un arreglo, el contador <code>i</code> va desde 0 hasta <code>length - 1</code>:</p>
-<pre class="ejemplo"><code>for (int i = 0; i &lt; notas.length; i++) {
-    // inicio   condición        avance
-    System.out.println(notas[i]);
+<pre class="ejemplo"><code>int[] edades = {15, 16, 17};
+for (int i = 0; i &lt; edades.length; i++) {
+    // inicio   condición         avance
+    System.out.println(edades[i]);
 }</code></pre>
         <h3>Acumular y contar</h3>
-        <p>Para <b>sumar</b> todo, se usa un acumulador: <code>suma = suma + notas[i];</code>. El promedio es <code>suma / cantidad</code>.</p>
+        <p>Para <b>sumar</b> todo, se usa un acumulador que empieza en 0 y en cada vuelta suma el elemento de esa posición; por ejemplo, para los puntos de un juego: <code>total = total + puntos[i];</code>. Un promedio es la suma dividida entre cuántos elementos hay.</p>
         <p>Para <b>contar</b> los que cumplen una condición se combina el <code>for</code> con un <code>if</code>:</p>
 <pre class="ejemplo"><code>int mayores = 0;
 for (int i = 0; i &lt; edades.length; i++) {
@@ -93,7 +94,7 @@ e.getNombre();          // "Luis"
 e.getEstadoAcademico(); // "Reprobado"</code></pre>
         <ul>
           <li>Los atributos son <code>private</code>: desde afuera solo se leen con los <b>getters</b>.</li>
-          <li>En el constructor, <code>this.edad</code> es el atributo y <code>edad</code> es el parámetro: <code>this.edad = edad;</code></li>
+          <li>En un constructor, <code>this.ciudad</code> es el atributo y <code>ciudad</code> es el parámetro: <code>this.ciudad = ciudad;</code> guarda en el objeto el valor recibido.</li>
         </ul>
         <h3>toString() que devuelve JSON</h3>
         <p>Como en clase, el método <code>toString()</code> arma el JSON del estudiante con un <code>StringBuilder</code>. Fíjate en las comillas: en JSON los textos van entre comillas dobles, que en Java se escriben <code>\\"</code>; los números van sin comillas.</p>
@@ -102,7 +103,7 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
           <li>Completa el constructor (edad y nota).</li>
           <li>Completa los getters <code>getEdad()</code> y <code>getNota()</code>.</li>
           <li>En <code>getEstadoAcademico()</code> escribe la condición de aprobado.</li>
-          <li>En <code>toString()</code> agrega la nota y el estado (usa el método <code>getEstadoAcademico()</code>).</li>
+          <li>En <code>toString()</code> agrega la nota y el estado. El estado no lo calcules otra vez: usa el método de la clase que ya lo calcula.</li>
         </ol>`,
     },
     {
@@ -128,7 +129,7 @@ e.getEstadoAcademico(); // "Reprobado"</code></pre>
 <pre class="ejemplo"><code>"Ana".equals("ana")            // false
 "Ana".equalsIgnoreCase("ana")  // true</code></pre>`,
       tarea: `<ol>
-          <li>Crea la lista con <code>new ArrayList&lt;&gt;()</code>.</li>
+          <li>Crea la lista vacía con la clase de lista dinámica de la tabla.</li>
           <li><code>agregar</code>: añade el estudiante a la lista.</li>
           <li><code>total</code>: devuelve el tamaño de la lista.</li>
           <li><code>buscarPorNombre</code>: compara sin importar mayúsculas.</li>
@@ -164,8 +165,8 @@ public class EstudianteServlet extends HttpServlet { ... }</code></pre>
           <li>Completa la ruta de <code>@WebServlet</code>: <code>/api/estudiantes</code>.</li>
           <li>Pon el content type de JSON.</li>
           <li>En <code>"total"</code> agrega la cantidad de estudiantes de la lista.</li>
-          <li>Dentro del <code>for</code> agrega el estudiante de la posición <code>i</code>.</li>
-          <li>Envía el JSON con <code>out.print(...)</code>.</li>
+          <li>Dentro del <code>for</code> agrega el estudiante que corresponde a esa vuelta.</li>
+          <li>Envía el JSON que armaste.</li>
         </ol>`,
     },
     {

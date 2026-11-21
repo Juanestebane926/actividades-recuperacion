@@ -7,6 +7,7 @@ test('Los inputs son controlados (lo que escribes se ve)', () => {
   const [nombre, nota] = inputsFormulario(container);
   escribir(nombre, 'Sofía');
   escribir(nota, '4.2');
+  if (nombre.value === '4.2') pista('Lo que escribiste en la nota terminó en el nombre: revisa qué función set usa cada onChange.', () => expect(nombre.value).toBe('Sofía'));
   pista('Lo que escribes en el nombre debe quedar en el estado: revisa qué propiedad del input trae el texto.', () => expect(nombre.value).toBe('Sofía'));
   pista('El onChange de la nota debe guardar lo escrito con su función set.', () => expect(nota.value).toBe('4.2'));
   pista('Al escribir, un input dejó de estar controlado por el estado (React lo avisó): revisa qué guardas en el estado en cada onChange.', () =>
@@ -22,6 +23,8 @@ test('Al enviar llama onAgregar con la nota como número', () => {
   const prevenido = enviar(container.querySelector('form'));
   pista('Al enviar, el navegador recargó la página: el evento tiene un método para evitarlo.', () => expect(prevenido).toBe(true));
   expect(onAgregar).toHaveBeenCalledTimes(1);
+  const recibido = onAgregar.mock.calls[0][0] || {};
+  if (typeof recibido.nota === 'number' && recibido.nota !== 4.2) pista('La nota llegó como número pero sin decimales: la conversión que usaste los quita.', () => expect(recibido.nota).toBe(4.2));
   pista('La nota llegó como texto: conviértela a número antes de avisarle al padre.', () => expect(onAgregar).toHaveBeenCalledWith({ nombre: 'Sofía', nota: 4.2 }));
 });
 

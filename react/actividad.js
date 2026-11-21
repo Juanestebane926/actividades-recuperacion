@@ -37,8 +37,8 @@
 &lt;Tarjeta titulo="Mi curso" /&gt;          // así se usa</code></pre>
           <h3>Template literals</h3>
           <p>Para armar textos con variables usamos comillas invertidas y <code>\${...}</code> (repaso de JavaScript):</p>
-<pre class="ejemplo"><code>const nombre = "Juan", edad = 20;
-const info = \`\${nombre} tiene \${edad} años\`;   // "Juan tiene 20 años"</code></pre>`,
+<pre class="ejemplo"><code>const ciudad = "Cali", grado = 11;
+const info = \`Vivo en \${ciudad} y estoy en grado \${grado}\`;   // "Vivo en Cali y estoy en grado 11"</code></pre>`,
         tarea: `<ol>
             <li><code>Saludo</code>: recibe la prop <code>nombre</code> y muéstrala dentro del <code>&lt;h2&gt;</code> → <i>Hola, Ana</i>.</li>
             <li><code>Perfil</code>: arma el texto <i>Ana tiene 18 años</i> con un template literal.</li>
@@ -91,7 +91,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
         tarea: `<ol>
             <li>Si la lista tiene 0 elementos, se muestra <i>No hay estudiantes</i>.</li>
             <li>Recorre <code>estudiantes</code> con <code>map</code>.</li>
-            <li>Usa <code>est.id</code> como <code>key</code>.</li>
+            <li>Usa como <code>key</code> el dato de cada estudiante que nunca se repite.</li>
             <li>Pásale a <code>EstadoBadge</code> la nota del estudiante.</li>
           </ol>`,
       },
@@ -111,13 +111,13 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
           <p><b>Ojo:</b> Nunca se cambia el estado directamente (<code>contador = 5</code> no funciona): siempre con la función <code>set...</code>.</p>
           <h3>filter</h3>
           <p><code>filter</code> crea un arreglo nuevo solo con los elementos que cumplen la condición:</p>
-<pre class="ejemplo"><code>const aprobados = estudiantes.filter(est =&gt; est.nota &gt;= 3.0);</code></pre>
+<pre class="ejemplo"><code>const disponibles = productos.filter(p =&gt; p.stock &gt; 0);   // solo los que tienen stock</code></pre>
           <h3>Invertir un booleano</h3>
           <p>El operador <code>!</code> (negación) convierte <code>true</code> en <code>false</code> y viceversa: <code>!activo</code>.</p>`,
         tarea: `<ol>
-            <li>El estado <code>soloAprobados</code> empieza en <code>false</code>.</li>
-            <li>Usa <code>filter</code> para quedarte con los aprobados.</li>
-            <li>El botón invierte el valor de <code>soloAprobados</code>.</li>
+            <li>El filtro empieza apagado: al principio se ven todos los estudiantes.</li>
+            <li>Cuando el filtro está encendido, usa <code>filter</code> para quedarte solo con los aprobados (nota de 3.0 o más).</li>
+            <li>Cada clic en el botón cambia el filtro a su valor contrario.</li>
           </ol>
           <p>Este paso también usa tu <code>EstadoBadge</code> del paso 2: si no lo completaste, vuelve a ese paso.</p>`,
       },
@@ -130,9 +130,9 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
         demo: '<FormularioEstudiante onAgregar={e => console.log("onAgregar recibió:", e)} />',
         explicacion: `
           <p>En un <b>formulario controlado</b> el valor de cada input vive en el estado de React:</p>
-<pre class="ejemplo"><code>const [nombre, setNombre] = useState('');
+<pre class="ejemplo"><code>const [ciudad, setCiudad] = useState('');
 
-&lt;input value={nombre} onChange={e =&gt; setNombre(e.target.value)} /&gt;</code></pre>
+&lt;input value={ciudad} onChange={e =&gt; setCiudad(e.target.value)} /&gt;</code></pre>
           <ul>
             <li><code>value</code> muestra lo que hay en el estado.</li>
             <li><code>onChange</code> se ejecuta en cada tecla; <code>e.target.value</code> es lo que el usuario escribió.</li>
@@ -143,7 +143,7 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
           <p>El hijo no guarda la lista: le <b>avisa al padre</b> llamando a la función que recibió por props (<code>onAgregar</code>).</p>
           <p>Y para mostrar el error solo si existe se usa <code>&amp;&amp;</code>: <code>{error &amp;&amp; &lt;p&gt;{error}&lt;/p&gt;}</code>.</p>`,
         tarea: `<ol>
-            <li>Evita la recarga con <code>e.preventDefault()</code>.</li>
+            <li>Evita que el formulario recargue la página (la explicación dice cómo).</li>
             <li>Convierte la nota a número antes de llamar <code>onAgregar</code>.</li>
             <li>Limpia la nota (texto vacío).</li>
             <li>Completa los dos <code>onChange</code>.</li>
@@ -169,10 +169,10 @@ const estado = edad &gt;= 18 ? "Mayor" : "Menor";   // "Mayor"</code></pre>
 }, [contador]);       // ← dependencias</code></pre>
           <p>Aquí lo usamos para poner en el título de la pestaña cuántos estudiantes hay.</p>`,
         tarea: `<ol>
-            <li>El estado empieza con <code>INICIALES</code>.</li>
-            <li>La dependencia del <code>useEffect</code> es <code>estudiantes</code>.</li>
-            <li>En <code>agregar</code>, copia la lista con spread.</li>
-            <li>Pásale <code>agregar</code> al formulario por la prop <code>onAgregar</code>.</li>
+            <li>El estado empieza con la lista inicial definida arriba del componente.</li>
+            <li>El efecto debe repetirse cada vez que cambie la lista de estudiantes.</li>
+            <li><code>agregar</code> crea un arreglo nuevo con lo que había más el estudiante nuevo.</li>
+            <li>Pásale al formulario, por su prop <code>onAgregar</code>, la función que agrega (la función, no el resultado de llamarla).</li>
           </ol>
           <p>La app completa usa los componentes de los pasos 1 a 5: si alguno quedó sin completar, vuelve a ese paso.</p>
           <p>Usa <b>Ejecutar</b> para probar tu app completa: agrega un estudiante y filtra. Cuando este paso pase, ve a <b>Nota</b>.</p>`,

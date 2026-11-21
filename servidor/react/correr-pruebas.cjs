@@ -91,7 +91,7 @@ function dondeOcurrio(e) {
   const re = /([\w-]+\.jsx?):(\d+):(\d+)/g;
   let m;
   while ((m = re.exec(pila))) {
-    if (/\.test\.jsx?$/.test(m[1]) || m[1] === 'correr-pruebas.cjs') continue;
+    if (/\.test\.jsx?$/.test(m[1]) || /^test\.jsx?$/.test(m[1]) || m[1] === 'correr-pruebas.cjs') continue;
     const linea = pila.slice(0, m.index).split('\n').pop();
     if (linea.includes('node_modules')) continue;
     return `en ${m[1]}, línea ${m[2]}`;
@@ -104,6 +104,7 @@ function explicar(e) {
   if (e.pista) msg = e.pista + '\n\n' + msg;
   const esAssert = e.matcherResult || /^expect\(/.test(String(e.message || '').replace(ANSI, '')) || e.pista;
   if (!esAssert) {
+    if (/Too many re-renders/.test(msg)) msg = 'Se está llamando una función que cambia el estado mientras React dibuja el componente. ¿Pusiste paréntesis donde debías pasar la función sin llamarla?\n\n' + msg;
     msg = 'Tu código lanzó un error: ' + (e.name && e.name !== 'Error' ? e.name + ': ' : '') + msg;
     const d = dondeOcurrio(e);
     if (d) msg += '\n   ' + d;

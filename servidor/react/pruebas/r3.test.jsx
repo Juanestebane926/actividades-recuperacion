@@ -27,7 +27,7 @@ test('Cada <li> tiene una key única (sin advertencias de React)', () => {
   const avisoKey = erroresDeReact().find(m => /unique "key" prop/.test(m));
   pista('React avisó que a los <li> les falta la key.', () => expect(avisoKey).toBeUndefined());
   pista('La key debe ser un dato que identifique a cada estudiante y nunca se repita (no su posición en la lista).', () =>
-    expect(fuente('ListaEstudiantes.jsx')).toMatch(/key\s*=\s*\{\s*\w+\.id\s*\}/));
+    expect(/key\s*=\s*\{\s*\w+\.id\s*\}/.test(fuente('ListaEstudiantes.jsx'))).toBe(true));   // sin mostrar el patrón
 });
 
 test('Lista vacía → "No hay estudiantes"', () => {

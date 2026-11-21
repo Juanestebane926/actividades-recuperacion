@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ListaEstudiantes } from './ListaEstudiantes';
 
 export function FiltroAprobados({ estudiantes }) {
-  // 1. Estado: ¿mostrar solo los aprobados? Empieza en false
+  // 1. Estado: ¿mostrar solo los aprobados? Empieza apagado (se ven todos)
   const [soloAprobados, setSoloAprobados] = useState(____);
 
   // 2. Si soloAprobados es true, deja solo los que tienen nota >= 3.0

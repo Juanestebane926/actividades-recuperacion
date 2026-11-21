@@ -626,3 +626,11 @@ html.dark .pista-cab .ico { color: var(--resaltador); }
 .CodeMirror-dialog button { font: 700 var(--t-xs) var(--sans); border-radius: 6px; border: 1px solid oklch(1 0 0 / 16%); background: transparent; color: #e3e7f3; padding: 2px 8px; margin-left: 4px; }
 .CodeMirror-dialog .CodeMirror-search-hint { color: #9aa3bd; }
 .cm-searching { background: rgb(255 212 59 / 30%); }
+
+/* Errores de sintaxis en el editor: subrayado rojo, marcador en el margen y globo con el mensaje */
+.CodeMirror-lint-markers { width: 18px; }
+.CodeMirror-lint-mark-error { background-position: left bottom; }
+.CodeMirror-lint-tooltip { z-index: 60; max-width: 420px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--popover); color: var(--foreground); font: 400 var(--t-sm)/1.45 var(--sans); white-space: pre-wrap;
+  box-shadow: 0 8px 24px rgb(16 22 45 / 22%); opacity: 1; }
+.CodeMirror-lint-message { padding-left: 20px; background-position: 0 2px; }

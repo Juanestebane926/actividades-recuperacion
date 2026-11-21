@@ -530,6 +530,44 @@
   }
 
   let marcaError = null;
+
+  // ------------------------------------------------------------------ errores de sintaxis en el editor (subrayado rojo)
+  // Mientras se escribe: revision.js (acorn para JSX; revisión liviana para Java). Después de Ejecutar/Comprobar: los
+  // errores reales del compilador, que se ven en el código hasta que se edita ese archivo.
+  const erroresServidor = {};   // archivo -> { doc, gen, lista }
+
+  function revisarSintaxis(texto, opciones, cm) {
+    if (!archivoActual || archivoActual === HTTP || !A.archivos[archivoActual] || A.archivos[archivoActual].soloLectura || !window.Revision) return [];
+    const Pos = CodeMirror.Pos;
+    const lista = (A.motor === 'java' ? Revision.java(texto) : Revision.jsx(texto))
+      .map(e => ({ from: Pos(e.desde.line, e.desde.ch), to: Pos(e.hasta.line, e.hasta.ch), message: e.mensaje, severity: 'error' }));
+    const srv = erroresServidor[archivoActual];
+    if (srv && srv.doc === cm.getDoc() && srv.doc.isClean(srv.gen)) {
+      for (const e of srv.lista) {
+        const l = Math.min(Math.max(0, e.linea - 1), cm.lineCount() - 1);
+        const txt = cm.getLine(l);
+        const desde = e.columna ? Math.max(0, e.columna - 1) : txt.search(/\S|$/);
+        lista.push({ from: Pos(l, desde), to: Pos(l, Math.max(desde + 1, txt.length)), message: e.mensaje, severity: 'error' });
+      }
+    }
+    return lista;
+  }
+
+  /** Guarda los errores de compilación que devolvió el servidor para marcarlos en el código. */
+  function registrarErroresServidor(errores) {
+    for (const k of Object.keys(erroresServidor)) delete erroresServidor[k];
+    for (const e of errores || []) {
+      // Solo archivos con pestaña en este paso (aunque todavía no se hayan abierto)
+      if (!e.archivo || !e.linea || e.seguridad || !pasoActual || !pasoActual.archivos.includes(e.archivo) || !crearEditor.docDe) continue;
+      const doc = crearEditor.docDe(e.archivo);
+      const r = erroresServidor[e.archivo] || (erroresServidor[e.archivo] = { doc, gen: doc.changeGeneration(), lista: [] });
+      const real = limpiar(e.mensaje).split('\n')[0];
+      const es = /_{4,}/.test(e.codigo || '') ? 'En esta línea todavía hay un espacio ____ por completar.' : traducir(e.mensaje);
+      r.lista.push({ linea: e.linea, columna: e.columna, mensaje: (es ? es + '\n' : '') + 'El compilador dice: ' + real });
+    }
+    if (editor && editor.performLint) editor.performLint();
+  }
+
   function crearEditor(paso) {
     const tabs = $('#pestanas');
     const modo = A.motor === 'java' ? 'text/x-java' : 'text/jsx';
@@ -538,6 +576,8 @@
     editor = CodeMirror($('#editor'), {
       value: '', mode: modo, theme: 'material-darker', lineNumbers: true, indentUnit: sangria, tabSize: sangria,
       matchBrackets: true, autoCloseBrackets: true, lineWrapping: false, styleActiveLine: true,
+      gutters: ['CodeMirror-lint-markers'],
+      lint: typeof CodeMirror.prototype.performLint === 'function' && window.Revision ? { getAnnotations: revisarSintaxis, delay: 450 } : false,
       autoCloseTags: A.motor === 'react',
       // Textos de buscar / reemplazar / ir a la línea en español
       phrases: { 'Search:': 'Buscar:', '(Use /re/ syntax for regexp search)': '(Enter: siguiente; Esc: cerrar)', 'Replace:': 'Reemplazar:',
@@ -575,6 +615,8 @@
     });
     // Cada archivo tiene su propio documento: al cambiar de pestaña se conservan el historial de Ctrl+Z, el cursor y el scroll
     const docs = {};
+    crearEditor.docs = docs;
+    crearEditor.docDe = n => docs[n] || (docs[n] = CodeMirror.Doc(estado.archivos[n], modo));
     const abrir = n => {
       const esHttp = n === HTTP;
       if (!esHttp && n === archivoActual && docs[n] && editor.getDoc() === docs[n]) return;   // ya está abierto
@@ -586,15 +628,14 @@
       if (esHttp) { pintarPeticiones(paso); return; }
       if (marcaError) { try { editor.removeLineClass(marcaError, 'background', 'cm-linea-error'); } catch (e) { /* era de otro archivo */ } marcaError = null; }
       const nuevo = !docs[n];
-      if (nuevo) docs[n] = CodeMirror.Doc(estado.archivos[n], modo);
-      editor.swapDoc(docs[n]);
+      editor.swapDoc(crearEditor.docDe(n));
       editor.setOption('readOnly', !!A.archivos[n].soloLectura);
       marcarBlancos();
       if (nuevo) {
         const primero = editor.getValue().indexOf('____');
         if (primero >= 0) { const pos = editor.posFromIndex(primero); editor.scrollIntoView({ line: pos.line, ch: 0 }, 120); }
       }
-      setTimeout(() => editor.refresh(), 0);
+      setTimeout(() => { editor.refresh(); if (editor.performLint) editor.performLint(); }, 0);
     };
     if (window.Sugerencias) Sugerencias.activar(editor, { A, archivos: () => estado.archivos, actual: () => archivoActual });
     const nombres = paso.archivos.slice();
@@ -908,6 +949,7 @@
       }
       if (res.excepcion) h += aviso('mal', 'triangle-alert', esc(limpiar(res.excepcion)), 'white-space:pre-wrap;font-family:var(--mono);font-size:12.5px');
     }
+    registrarErroresServidor(res.errores && res.errores.length ? res.errores : []);
     if (res.pistaNueva) h += aviso('azul', 'lightbulb', 'Se desbloqueó una pista. Está debajo de <b>Tu tarea</b>, en la explicación. Abrirla resta parte de la nota de este paso.');
     if (res.pendientes && res.pendientes.length) h = htmlPendientes(res.pendientes, modo === 'comprobar' && res.pruebas && res.pruebas.length && res.pruebas.every(r => r.ok)) + h;
     s.innerHTML = h;

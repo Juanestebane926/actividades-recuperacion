@@ -53,14 +53,19 @@ public class Respuesta {
                  .append(". Revisa @RestController, la ruta de @RequestMapping de la clase y la del método.");
             } else if (n.equals("HttpRequestMethodNotSupportedException")) {
                 b.append("\n   Spring dijo: ").append(excepcion.getMessage())
-                 .append(". La ruta existe, pero ningún método la atiende con ").append(metodo).append('.');
+                 .append(". La ruta existe, pero ningún método la atiende con ").append(metodo)
+                 .append(". Si ya escribiste uno, revisa que su ruta coincida con la URL completa, incluida la parte entre llaves.");
             } else if (status >= 500) {
                 b.append("\n   Excepción: ").append(sangrar(Mensajes.excepcion(excepcion)));
             } else {
                 b.append("\n   Spring dijo (").append(n).append("): ").append(excepcion.getMessage());
             }
         } else if (status == 404 && cuerpo.isBlank()) {
-            b.append("\n   Nadie atiende la ruta ").append(ruta()).append(": revisa la ruta de la anotación (@WebServlet / @RequestMapping).");
+            // Spring y Tomcat avisan distinto cuando la ruta no existe: un 404 vacío lo devolvió el código del estudiante
+            b.append("\n   La respuesta fue 404 sin cuerpo. La ruta sí existe: fue tu código el que respondió 404 (por ejemplo, porque no")
+             .append(" encontró el dato). Revisa la condición que decide cuándo responder 404 y, si debía responder con un mensaje, que lo escriba.");
+        } else if (status == 404 && cuerpo.contains("HTTP Status 404")) {
+            b.append("\n   Tomcat no tiene ningún servlet en la ruta ").append(ruta()).append(": revisa la ruta de @WebServlet.");
         } else if (!cuerpo.isBlank() && status >= 400) {
             b.append("\n   Cuerpo de la respuesta: ").append(recorte(cuerpo));
         }

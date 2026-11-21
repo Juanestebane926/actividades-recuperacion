@@ -11,7 +11,7 @@ const INICIALES = [
 
 // App es el orquestador: guarda la lista y se la pasa a los hijos.
 export default function App() {
-  // 1. Estado con la lista de estudiantes (empieza con INICIALES)
+  // 1. Estado con la lista de estudiantes (empieza con la lista inicial de arriba)
   const [estudiantes, setEstudiantes] = useState(____);
 
   // 2. useEffect: cada vez que cambie la lista, actualiza el título de la pestaña

@@ -44,7 +44,7 @@ public class EstudianteServlet extends HttpServlet {
             if (i > 0) {
                 json.append(",");   // coma solo ENTRE elementos
             }
-            // 4. Agrega el estudiante número i (su toString() ya es JSON)
+            // 4. Agrega el estudiante de esta vuelta del for (su toString() ya es JSON)
             json.append(lista.get(____));
         }
         json.append("]}");

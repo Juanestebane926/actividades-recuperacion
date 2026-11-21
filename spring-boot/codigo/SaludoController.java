@@ -14,7 +14,7 @@ public class SaludoController {
     // GET /api/saludo             ->  {"mensaje":"Hola, invitado"}
     @GetMapping("/saludo")
     public SaludoResponse saludar(@____(defaultValue = "____") String nombre) {
-        // Crea y devuelve un SaludoResponse con el texto "Hola, " + nombre
+        // Devuelve un SaludoResponse con el saludo armado (mira el resultado esperado arriba)
         return ____;
     }
 }

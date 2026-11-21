@@ -32,7 +32,7 @@ export const PISTAS = {
       '<code>ResponseEntity</code> tiene un método con el nombre de cada estado HTTP. Busca en la explicación el que significa «no encontrado». Cuando la vacante sí existe, responde 200 con la que encontraste.',
     ],
     p5: [
-      'Primero valida y después guarda. El título puede faltar de dos formas: que no llegue (<code>null</code>) o que llegue vacío. Para lo segundo, <code>String</code> tiene un método que lo dice.',
+      'Primero valida y después guarda. El título puede faltar de tres formas: que no llegue (<code>null</code>), que llegue vacío o que solo tenga espacios. Revisa primero el null y después quita los espacios antes de preguntar si quedó vacío.',
       'Guardar no es trabajo del controller: el service ya sabe crear vacantes (lo hiciste en el paso 3). Para responder «creado» usa la constante de <code>HttpStatus</code> que aparece en la tabla de códigos de la explicación.',
       'Si falla la prueba del 400 por el mensaje, copia el texto exacto que pide la tarea; la tilde cuenta.',
     ],

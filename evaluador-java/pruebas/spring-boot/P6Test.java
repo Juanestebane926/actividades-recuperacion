@@ -37,7 +37,7 @@ class P6Test {
     @DisplayName("eliminar() del service")
     void t3_eliminar() {
         VacanteService s = new VacanteService();
-        Http.igual(true, s.eliminar(1L), "eliminar(1L) (sí existe) debe devolver");
+        Http.igual(true, s.eliminar(1L), "eliminar(1L) (sí existe) debe devolver true y quitarla de la lista. La lista guarda objetos Vacante: para quitar una, primero tienes que tenerla (¿qué método ya la busca por id?)");
         Http.igual(2, s.listar().size(), "Vacantes que quedan después de eliminar(1L)");
         Http.igual(false, s.eliminar(99L), "eliminar(99L) (no existe) debe devolver");
     }
