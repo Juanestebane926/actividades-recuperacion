@@ -73,11 +73,13 @@
     const aprob = conNota.filter(e => e.ultimaNota >= 3);
     const th = (col, t) => `<th data-col="${col}">${t}${orden.col === col ? I(orden.asc ? 'arrow-up' : 'arrow-down') : ''}</th>`;
     const tarjeta = (etq, icono, valor, color) => `<div class="card"><div class="etq">${etq}${I(icono)}</div><div class="num"${color ? ' style="color:' + color + '"' : ''}>${valor}</div></div>`;
-    app.innerHTML = `<div class="tablero">
-      <div class="cab-panel"><div class="marca"><span class="logo">${I('chart-column')}</span><span class="txt">Panel docente<small>Actividades de recuperación</small></span></div>
+    app.innerHTML = `<header class="barra dark simple">
+        <div class="marca"><span class="baldosa icono">${I('chart-column')}</span><span class="txt">Panel docente<small>Actividades de recuperación</small></span></div>
+        <span style="flex:1"></span>
         <button class="btn" data-variant="outline" data-size="sm" id="csv">${I('download')} Descargar notas (CSV)</button>
         <button class="btn" data-variant="outline" data-size="sm" id="recargar">${I('refresh-cw')} Actualizar</button>
-        <button class="btn" data-variant="ghost" data-size="sm" id="salir">${I('log-out')} Salir</button></div>
+        <button class="btn" data-variant="ghost" data-size="sm" id="salir">${I('log-out')} Salir</button></header>
+      <div class="tablero">
       <div class="resumen">
         ${tarjeta('Estudiantes', 'users', total.length)}
         ${tarjeta('Con nota', 'list-checks', conNota.length)}

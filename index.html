@@ -8,38 +8,52 @@
 <meta name="color-scheme" content="light dark">
 <title>Actividades de recuperación</title>
 <link rel="stylesheet" href="assets/vendor/basecoat-1.1.0.min.css">
-<link rel="stylesheet" href="assets/motor.css?v=30">
-<script defer src="assets/iconos.js?v=30"></script>
+<link rel="stylesheet" href="assets/motor.css?v=32">
+<script defer src="assets/iconos.js?v=32"></script>
 </head>
 <body>
-<main class="portada">
-  <div class="cabecera">
-    <div class="marca"><span class="logo"><i data-icono="graduation-cap"></i></span><span class="txt">Actividades de recuperación<small>Programación</small></span></div>
-    <a class="btn" data-variant="ghost" data-size="sm" href="docente/"><i data-icono="chart-column"></i> Panel docente</a>
+<header class="heroe dark">
+  <div class="dentro" style="padding-bottom:64px">
+    <div class="cabecera">
+      <div class="marca"><span class="baldosa icono"><i data-icono="graduation-cap"></i></span><span class="txt">Actividades de recuperación<small>Programación</small></span></div>
+      <a class="btn" data-variant="ghost" data-size="sm" href="docente/"><i data-icono="chart-column"></i> Panel docente</a>
+    </div>
+    <span class="eyebrow"><i data-icono="sparkles"></i> Elige tu curso para empezar</span>
+    <h1>Recupera tu materia paso a paso</h1>
+    <p class="sub">No tienes que instalar nada: escribes el código aquí y el servidor del curso lo compila, lo ejecuta y lo prueba de verdad. Al final calificas y tu nota queda registrada para tu profesor.</p>
   </div>
-  <span class="eyebrow"><i data-icono="sparkles"></i> Elige tu curso para empezar</span>
-  <h1>Recupera tu materia paso a paso</h1>
-  <p class="sub">No tienes que instalar nada: escribes el código aquí y el servidor del curso lo compila, lo ejecuta y lo prueba de verdad. Al final calificas y tu nota queda registrada para tu profesor.</p>
-
+</header>
+<main class="portada" style="padding-top:0">
   <div class="cursos">
-    <a class="card curso" href="spring-boot/">
-      <span class="icono-curso"><i data-icono="leaf"></i></span>
-      <h2>Spring Boot</h2>
-      <p>API REST de vacantes: controllers, @RequestParam, @PathVariable, @RequestBody, ResponseEntity y servicios.</p>
-      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 6 pasos</span><span class="entrar">Empezar <i data-icono="arrow-right"></i></span></div>
+    <a class="card curso" href="spring-boot/" style="--marca:#6db33f">
+      <div class="cuerpo-curso">
+        <span class="baldosa mediana"><i data-logo="spring-boot"></i></span>
+        <h2>Spring Boot</h2>
+        <p>API REST de vacantes: controllers, @RequestParam, @PathVariable, @RequestBody, ResponseEntity y servicios.</p>
+      </div>
+      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 6 pasos</span><span class="entrar-txt">Empezar <i data-icono="arrow-right"></i></span></div>
     </a>
-    <a class="card curso" href="react/">
-      <span class="icono-curso"><i data-icono="atom"></i></span>
-      <h2>React</h2>
-      <p>Gestor de estudiantes: componentes, props, render condicional, listas, useState, formularios y useEffect.</p>
-      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 6 pasos</span><span class="entrar">Empezar <i data-icono="arrow-right"></i></span></div>
+    <a class="card curso" href="react/" style="--marca:#149eca">
+      <div class="cuerpo-curso">
+        <span class="baldosa mediana"><i data-logo="react"></i></span>
+        <h2>React</h2>
+        <p>Gestor de estudiantes: componentes, props, render condicional, listas, useState, formularios y useEffect.</p>
+      </div>
+      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 6 pasos</span><span class="entrar-txt">Empezar <i data-icono="arrow-right"></i></span></div>
     </a>
-    <a class="card curso" href="java-web/">
-      <span class="icono-curso"><i data-icono="coffee"></i></span>
-      <h2>Java Web</h2>
-      <p>API de estudiantes con Servlets: condicionales, ciclos, clases, ArrayList, doGet y doPost con JSON.</p>
-      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 7 pasos</span><span class="entrar">Empezar <i data-icono="arrow-right"></i></span></div>
+    <a class="card curso" href="java-web/" style="--marca:#e76f00">
+      <div class="cuerpo-curso">
+        <span class="baldosa mediana"><i data-logo="java-web"></i></span>
+        <h2>Java Web</h2>
+        <p>API de estudiantes con Servlets: condicionales, ciclos, clases, ArrayList, doGet y doPost con JSON.</p>
+      </div>
+      <div class="pie-curso"><span><i data-icono="clock"></i> 60 a 90 min · 7 pasos</span><span class="entrar-txt">Empezar <i data-icono="arrow-right"></i></span></div>
     </a>
+  </div>
+  <div class="como-va">
+    <div><span class="baldosa icono"><i data-icono="book-open"></i></span><div><h3>Lee y completa</h3><p>Cada paso explica un tema y trae código con espacios para llenar.</p></div></div>
+    <div><span class="baldosa icono"><i data-icono="play"></i></span><div><h3>Ejecuta y comprueba</h3><p>Tu código corre de verdad y las pruebas te dicen qué falta.</p></div></div>
+    <div><span class="baldosa icono"><i data-icono="flag"></i></span><div><h3>Califica</h3><p>Tu nota queda registrada para tu profesor al instante.</p></div></div>
   </div>
 </main>
 </body>

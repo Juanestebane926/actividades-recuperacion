@@ -12,7 +12,8 @@
   const HTTP = 'peticiones.http';
   const API = (window.API_URL || '').replace(/\/$/, '');
   const I = (n, c) => (window.Icono ? window.Icono(n, c) : '');
-  const ICONO_CURSO = { 'spring-boot': 'leaf', react: 'atom', 'java-web': 'coffee' }[A.id] || 'book-open';
+  /** Logo de la tecnología del curso en una baldosa blanca. */
+  const LOGO = (tam) => `<span class="baldosa${tam ? ' ' + tam : ''}">${window.Logo ? window.Logo(A.id) : ''}</span>`;
   /** Los mensajes del servidor traen un emoji antes de la pista: se muestra como texto. */
   const limpiar = t => String(t == null ? '' : t).replace(/\u{1F4A1}\s*/gu, 'Pista: ');
   let app = null;
@@ -83,6 +84,7 @@
   // ------------------------------------------------------------------ arranque
   async function iniciar() {
     app = document.getElementById('app');
+    document.body.dataset.curso = A.id;
     app.innerHTML = '<div class="portada angosta"><div class="estado-carga"><span class="girando"></span> Cargando actividad…</div></div>';
     await Promise.all(Object.keys(A.archivos).map(async n => {
       const r = await fetch(A.archivos[n].ruta, { cache: 'no-cache' });
@@ -115,33 +117,21 @@
   function portada(error) {
     const temas = A.temas.map(t => '<span class="badge" data-variant="outline">' + esc(t) + '</span>').join('');
     app.innerHTML = `
-      <div class="portada">
-        <div class="cabecera">
-          <a class="marca" href="../"><span class="logo">${I(ICONO_CURSO)}</span><span class="txt">${esc(A.curso)}<small>Actividades de recuperación</small></span></a>
-          <a class="btn" data-variant="ghost" data-size="sm" href="../">${I('arrow-left')} Todas las actividades</a>
-        </div>
-        <span class="eyebrow">${I('graduation-cap')} Actividad de recuperación · ${esc(A.curso)}</span>
-        <h1>${esc(A.titulo)}</h1>
-        <p class="sub">${A.descripcion}</p>
-        <div class="meta"><span>${I('clock')} ${esc(A.duracion)}</span><span>${I('list-checks')} ${A.pasos.length} pasos y la nota final</span><span>${I('monitor')} Nada que instalar</span></div>
-        <div class="temas">${temas}</div>
-        <div class="portada-grid">
-          <div>
-            <div class="card">
-              <header><h2>Cómo funciona</h2></header>
-              <section>
-                <ol class="pasos-como">
-                  <li><div>Cada paso trae una <b>explicación</b> y un <b>código para completar</b>. Los espacios <code>____</code> son los que debes llenar.</div></li>
-                  <li><div><b>Ejecutar</b> corre tu código de verdad y te muestra lo que hace. <b>Comprobar</b> corre las pruebas automáticas y te dice qué falla, con los mensajes reales del compilador y del framework.</div></li>
-                  <li><div>Si te atascas, abre las <b>pistas</b>. Puedes intentarlo cuantas veces quieras.</div></li>
-                  <li><div>Al final, en <b>Nota</b>, se califica todo tu código y la nota <b>queda registrada para tu profesor</b> automáticamente.</div></li>
-                </ol>
-              </section>
-              ${A.aviso ? '<footer><div class="nota-info">' + A.aviso + '</div></footer>' : ''}
-            </div>
+      <header class="heroe dark">
+        <div class="dentro">
+          <div class="cabecera">
+            <a class="marca" href="../"><span class="baldosa icono">${I('graduation-cap')}</span><span class="txt">Actividades de recuperación<small>Programación</small></span></a>
+            <a class="btn" data-variant="ghost" data-size="sm" href="../">${I('arrow-left')} Todas las actividades</a>
           </div>
-          <div>
-            <div class="card">
+          <div class="heroe-curso">
+            <div>
+              <div class="titulo-curso">${LOGO('grande')}
+                <div><span class="eyebrow">Recuperación · ${esc(A.curso)}</span><h1>${esc(A.titulo)}</h1></div></div>
+              <p class="sub" style="margin-top:16px">${A.descripcion}</p>
+              <div class="meta"><span>${I('clock')} ${esc(A.duracion)}</span><span>${I('list-checks')} ${A.pasos.length} pasos y la nota final</span><span>${I('monitor')} Nada que instalar</span></div>
+              <div class="temas">${temas}</div>
+            </div>
+            <div class="card entrar">
               <header><h2>Entrar a la actividad</h2><p>La primera vez escribe tus datos y <b>elige un PIN</b> de 4 a 8 números. Para continuar después, en este u otro computador, usa el <b>mismo documento y PIN</b>.</p></header>
               <section>
                 <form id="form-entrar" class="form">
@@ -156,6 +146,20 @@
               </section>
             </div>
           </div>
+        </div>
+      </header>
+      <div class="portada">
+        <div class="card">
+          <header><h2>Cómo funciona</h2></header>
+          <section>
+            <ol class="pasos-como">
+              <li><div>Cada paso trae una <b>explicación</b> y un <b>código para completar</b>. Los espacios <code>____</code> son los que debes llenar.</div></li>
+              <li><div><b>Ejecutar</b> corre tu código de verdad y te muestra lo que hace. <b>Comprobar</b> corre las pruebas automáticas y te dice qué falla, con los mensajes reales del compilador y del framework.</div></li>
+              <li><div>Si te atascas, abre las <b>pistas</b>. Puedes intentarlo cuantas veces quieras.</div></li>
+              <li><div>Al final, en <b>Nota</b>, se califica todo tu código y la nota <b>queda registrada para tu profesor</b> automáticamente.</div></li>
+            </ol>
+          </section>
+          ${A.aviso ? '<footer><div class="nota-info">' + A.aviso + '</div></footer>' : ''}
         </div>
       </div>`;
     $('#form-entrar').onsubmit = async ev => {
@@ -186,23 +190,42 @@
 
   // ------------------------------------------------------------------ estructura
   function mostrarTrabajo() {
+    const iniciales = String(estudiante.nombre || estudiante.doc || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
     app.innerHTML = `
-      <header class="barra">
-        <div class="marca"><span class="logo">${I(ICONO_CURSO)}</span><span class="txt">${esc(A.curso)}<small>Recuperación</small></span></div>
+      <header class="barra dark">
+        <div class="marca">${LOGO()}<span class="txt">${esc(A.curso)}<small>Recuperación</small></span></div>
         <nav class="navpasos" aria-label="Pasos">
-          <button class="btn" data-variant="outline" data-size="sm" id="anterior" title="Paso anterior (Alt + flecha izquierda)">${I('chevron-left')} Anterior</button>
-          <div class="progreso" id="progreso"></div>
-          <button class="btn" data-size="sm" id="siguiente" title="Paso siguiente (Alt + flecha derecha)">Siguiente ${I('chevron-right')}</button>
+          <button class="nav-flecha" id="anterior" title="Paso anterior (Alt + flecha izquierda)" aria-label="Paso anterior">${I('chevron-left')}</button>
+          <div class="selector-paso">
+            <button class="paso-actual" id="paso-actual" aria-haspopup="menu" aria-expanded="false" title="Ver todos los pasos">
+              <span class="anillo" id="anillo"></span>
+              <span class="textos"><span class="cual" id="paso-cual"></span><span class="cuantos" id="paso-cuantos"></span></span>
+              ${I('chevron-down', 'abre')}
+            </button>
+            <div class="menu-pasos" id="menu-pasos" role="menu" hidden></div>
+          </div>
+          <button class="nav-flecha siguiente" id="siguiente" title="Paso siguiente (Alt + flecha derecha)"><span>Siguiente</span>${I('chevron-right')}</button>
         </nav>
-        <div class="estudiante">
-          <div class="quien"><div class="nombre" title="${esc(estudiante.nombre)} · ${esc(estudiante.doc)}">${esc(estudiante.nombre)}</div><span class="guardado" id="guardado">${I('cloud-check')}<span>Guardado</span></span></div>
-          <button class="btn" data-variant="ghost" data-size="icon-sm" id="salir" title="Salir (cerrar sesión en este computador)" aria-label="Salir">${I('log-out')}</button>
+        <div class="lado">
+          <span class="guardado" id="guardado">${I('cloud-check')}<span>Guardado</span></span>
+          <button class="btn ir-nota" data-variant="outline" data-size="sm" id="ir-nota" title="Calificar toda la actividad y ver tu nota">${I('flag')}<span>Calificar</span></button>
+          <div class="usuario">
+            <button class="avatar" id="avatar" aria-haspopup="menu" aria-expanded="false" title="${esc(estudiante.nombre)}">${esc(iniciales)}</button>
+            <div class="menu-usuario" id="menu-usuario" role="menu" hidden>
+              <div class="quien"><span class="avatar grande">${esc(iniciales)}</span><div><b>${esc(estudiante.nombre)}</b><small>Documento ${esc(estudiante.doc)}</small></div></div>
+              <button class="item" id="salir" role="menuitem">${I('log-out')} Salir de este computador</button>
+            </div>
+          </div>
         </div>
+        <div class="progreso" id="progreso" aria-label="Avance por paso"></div>
       </header>
       <main id="vista"></main>`;
     $('#anterior').onclick = () => irA(estado.paso - 1);
     $('#siguiente').onclick = () => irA(estado.paso + 1);
+    $('#ir-nota').onclick = () => irA(A.pasos.length);
     $('#salir').onclick = salir;
+    menu($('#paso-actual'), $('#menu-pasos'));
+    menu($('#avatar'), $('#menu-usuario'));
     irA(Math.min(estado.paso || 0, A.pasos.length));
   }
   document.addEventListener('keydown', ev => {
@@ -211,22 +234,61 @@
     if (ev.key === 'ArrowRight') { ev.preventDefault(); irA(estado.paso + 1); }
   });
 
+  /** Menú desplegable simple: abre con clic, cierra con Escape o al hacer clic afuera. */
+  function menu(boton, panel) {
+    const cerrar = () => { panel.hidden = true; boton.setAttribute('aria-expanded', 'false'); };
+    boton.onclick = ev => {
+      ev.stopPropagation();
+      const abrir = panel.hidden;
+      document.querySelectorAll('.menu-pasos, .menu-usuario').forEach(m => { m.hidden = true; });
+      panel.hidden = !abrir;
+      boton.setAttribute('aria-expanded', String(abrir));
+    };
+    panel.addEventListener('click', ev => { if (ev.target.closest('button')) cerrar(); });
+    document.addEventListener('click', ev => { if (!panel.hidden && !panel.contains(ev.target)) cerrar(); });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !panel.hidden) { cerrar(); boton.focus(); } });
+  }
+
   function pintarProgreso() {
-    const p = $('#progreso');
-    let h = '';
+    const total = A.pasos.length;
+    const estadoDe = i => {
+      const r = estado.res[A.pasos[i].id];
+      return { r, clase: !r ? 'pendiente' : (r.total && r.ok === r.total ? 'hecho' : 'fallo') };
+    };
+    const completos = A.pasos.filter((p, i) => estadoDe(i).clase === 'hecho').length;
+    const enNota = estado.paso >= total;
+
+    // Franja segmentada (un tramo por paso y uno para la nota) y lista del menú
+    let franja = '', lista = '';
     A.pasos.forEach((paso, i) => {
-      const r = estado.res[paso.id];
-      const completo = r && r.total && r.ok === r.total;
-      const cls = [i === estado.paso ? 'actual' : '', r ? (completo ? 'hecho' : 'fallo') : ''].join(' ');
-      h += `<button class="${cls}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}${r ? ' (' + r.ok + '/' + r.total + ')' : ''}">${completo ? I('check') : i + 1}</button>`;
+      const { r, clase } = estadoDe(i);
+      const pruebas = r ? r.ok + '/' + r.total + ' pruebas' : '';
+      franja += `<button class="tramo ${clase}${i === estado.paso ? ' actual' : ''}" data-i="${i}" title="Paso ${i + 1}: ${esc(paso.titulo)}${pruebas ? ' (' + pruebas + ')' : ''}" aria-label="Paso ${i + 1}"></button>`;
+      const icono = clase === 'hecho' ? 'circle-check' : clase === 'fallo' ? 'circle-x' : 'circle-dashed';
+      lista += `<button class="item ${clase}${i === estado.paso ? ' actual' : ''}" role="menuitem" data-i="${i}">
+        <span class="estado">${I(icono)}</span><span class="nombre"><small>Paso ${i + 1}</small>${esc(paso.titulo)}</span><span class="pruebas">${pruebas || 'Sin comprobar'}</span></button>`;
     });
-    h += `<button class="nota ${estado.paso === A.pasos.length ? 'actual' : ''} ${entregas.length ? 'hecho' : ''}" data-i="${A.pasos.length}" title="Calificar y ver la nota">${I('flag')} Nota</button>`;
-    p.innerHTML = h;
+    franja += `<button class="tramo nota${entregas.length ? ' hecho' : ''}${enNota ? ' actual' : ''}" data-i="${total}" title="Calificar y ver la nota" aria-label="Nota"></button>`;
+    lista += `<button class="item nota${enNota ? ' actual' : ''}" role="menuitem" data-i="${total}">
+      <span class="estado">${I('flag')}</span><span class="nombre"><small>Final</small>Calificar y ver la nota</span><span class="pruebas">${entregas.length ? 'Última: ' + Number(entregas[0].nota).toFixed(1) : ''}</span></button>`;
+    const p = $('#progreso');
+    p.innerHTML = franja;
     p.querySelectorAll('button').forEach(b => b.onclick = () => irA(+b.dataset.i));
+    const m = $('#menu-pasos');
+    m.innerHTML = `<div class="cab-menu"><b>Tu avance</b><span>${completos} de ${total} pasos completos</span><div class="barra-menu"><i style="width:${Math.round(completos / total * 100)}%"></i></div></div><div class="lista">${lista}</div>`;
+    m.querySelectorAll('button[data-i]').forEach(b => b.onclick = () => irA(+b.dataset.i));
+
+    // Selector central
+    const actual = enNota ? 'nota' : estadoDe(estado.paso).clase;
+    $('#paso-cual').textContent = enNota ? 'Nota final' : `Paso ${estado.paso + 1} de ${total}`;
+    $('#paso-cuantos').textContent = enNota ? `${completos} de ${total} pasos completos` : A.pasos[estado.paso].titulo;
+    const anillo = $('#anillo');
+    anillo.className = 'anillo ' + actual;
+    anillo.innerHTML = enNota ? I('flag') : actual === 'hecho' ? I('check') : String(estado.paso + 1);
     $('#anterior').disabled = estado.paso === 0;
-    $('#siguiente').disabled = estado.paso >= A.pasos.length;
-    const actual = p.querySelector('.actual');
-    if (actual) actual.scrollIntoView({ block: 'nearest', inline: 'center' });
+    $('#siguiente').disabled = enNota;
+    $('#siguiente').querySelector('span').textContent = estado.paso === total - 1 ? 'Ir a la nota' : 'Siguiente';
+    $('#ir-nota').classList.toggle('activo', enNota);
   }
 
   function irA(i) {
@@ -246,17 +308,21 @@
     pasoActual = paso;
     const pistasVistas = estado.pistas[paso.id] || 0;
     const pistas = (paso.pistas || []).map((p, k) => `<details ${k < pistasVistas ? 'open' : ''} data-k="${k}"><summary>${I('chevron-right')}Pista ${k + 1}</summary><div>${p}</div></details>`).join('');
-    const avance = Math.round((i + 1) / A.pasos.length * 100);
     $('#vista').innerHTML = `
-      <div class="trabajo">
-        <section class="panel explicacion prosa">
-          <div class="num">Paso ${i + 1} de ${A.pasos.length}<span class="barrita"><i style="width:${avance}%"></i></span></div>
-          <h2>${esc(paso.titulo)}</h2>
-          ${paso.explicacion}
-          <div class="tarea"><h3>${I('target')} Tu tarea</h3>${paso.tarea}</div>
-          ${pistas ? '<h3 class="titulo-pistas">' + I('lightbulb') + ' ¿Te atascaste?</h3><div class="pistas">' + pistas + '</div>' : ''}
+      <div class="trabajo" id="trabajo">
+        <section class="panel explicacion">
+          <div class="cab-paso">
+            <div class="num">Paso ${i + 1}</div>
+            <h2>${esc(paso.titulo)}</h2>
+          </div>
+          <div class="contenido prosa">
+            ${paso.explicacion}
+            <div class="tarea"><h3>${I('target')} Tu tarea</h3>${paso.tarea}</div>
+            ${pistas ? '<h3 class="titulo-pistas">' + I('lightbulb') + ' ¿Te atascaste?</h3><div class="pistas">' + pistas + '</div>' : ''}
+          </div>
         </section>
-        <section class="editor-col" id="editor-col">
+        <div class="divisor v" id="div-v" title="Arrastra para cambiar el ancho" role="separator" aria-orientation="vertical"></div>
+        <section class="ide dark" id="editor-col">
           <div class="editor-caja">
             <div class="pestanas" id="pestanas"></div>
             <div id="editor"></div>
@@ -270,7 +336,8 @@
             <span class="espacio"></span>
             <button class="btn" data-variant="ghost" data-size="sm" id="reiniciar" title="Vuelve este archivo a su versión inicial">${I('rotate-ccw')}<span>Reiniciar archivo</span></button>
           </div>
-          <div class="panel salida">
+          <div class="divisor h" id="div-h" title="Arrastra para cambiar el alto" role="separator" aria-orientation="horizontal"></div>
+          <div class="salida">
             <div class="cab"><span>${I('terminal')}<span id="salida-titulo">Resultado</span></span><button class="btn" data-variant="ghost" data-size="sm" id="agrandar" title="Agrandar o achicar el panel de resultados">${I('maximize-2')}<span>Agrandar</span></button></div>
             <div class="cuerpo" id="salida"><p class="vacio">Pulsa <b>Ejecutar</b> para ver qué hace tu código o <b>Comprobar</b> para revisarlo.</p></div>
           </div>
@@ -283,13 +350,78 @@
     $('#ejecutar').onclick = () => evaluar(paso, 'ejecutar');
     $('#comprobar').onclick = () => evaluar(paso, 'comprobar');
     $('#agrandar').onclick = () => {
-      const c = $('#editor-col');
-      c.classList.toggle('salida-grande');
-      const grande = c.classList.contains('salida-grande');
-      $('#agrandar').innerHTML = grande ? I('minimize-2') + '<span>Achicar</span>' : I('maximize-2') + '<span>Agrandar</span>';
+      // Alterna entre el alto elegido por el estudiante y un panel de resultados grande
+      const grande = !$('#editor-col').classList.contains('salida-grande');
+      $('#editor-col').classList.toggle('salida-grande', grande);
+      aplicarTamanos(grande ? { altoEditor: 30 } : null);
       setTimeout(() => editor.refresh(), 30);
     };
+    activarDivisores();
     $('#reiniciar').onclick = () => reiniciarArchivo(paso);
+  }
+
+  // ------------------------------------------------------------------ tamaño de los paneles (divisores que se arrastran)
+  const CLAVE_TAMANOS = 'rec2:tamanos';
+  const TAMANOS_INICIALES = { anchoExpl: 38, altoEditor: 56 };
+  let tamanos = Object.assign({}, TAMANOS_INICIALES);
+  try { Object.assign(tamanos, JSON.parse(localStorage.getItem(CLAVE_TAMANOS)) || {}); } catch (e) { /* sin almacenamiento */ }
+  const limitar = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  /** Aplica los tamaños guardados (o unos temporales, como el panel de resultados grande). */
+  function aplicarTamanos(temporal) {
+    const t = Object.assign({}, tamanos, temporal || {});
+    const trabajo = $('#trabajo'), ide = $('#editor-col'), b = $('#agrandar');
+    if (trabajo) trabajo.style.setProperty('--ancho-expl', t.anchoExpl + '%');
+    if (ide) ide.style.setProperty('--alto-editor', t.altoEditor + '%');
+    if (b) b.innerHTML = ide && ide.classList.contains('salida-grande') ? I('minimize-2') + '<span>Achicar</span>' : I('maximize-2') + '<span>Agrandar</span>';
+  }
+  function guardarTamanos() { try { localStorage.setItem(CLAVE_TAMANOS, JSON.stringify(tamanos)); } catch (e) { /* sin almacenamiento */ } }
+
+  /** Arrastre con el ratón o el dedo; el cálculo va en requestAnimationFrame para no recargar PCs lentos. */
+  function arrastrar(div, eje, alMover) {
+    div.addEventListener('pointerdown', ev => {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      div.setPointerCapture(ev.pointerId);
+      div.classList.add('activo');
+      document.body.classList.add('arrastrando', eje);
+      let ultimo = null, cuadro = 0;
+      const mover = e => { ultimo = e; if (!cuadro) cuadro = requestAnimationFrame(() => { cuadro = 0; alMover(ultimo); }); };
+      const soltar = () => {
+        div.removeEventListener('pointermove', mover);
+        div.removeEventListener('pointerup', soltar);
+        div.removeEventListener('pointercancel', soltar);
+        div.classList.remove('activo');
+        document.body.classList.remove('arrastrando', eje);
+        guardarTamanos();
+        if (editor) editor.refresh();
+      };
+      div.addEventListener('pointermove', mover);
+      div.addEventListener('pointerup', soltar);
+      div.addEventListener('pointercancel', soltar);
+    });
+    // Doble clic: vuelve al tamaño inicial
+    div.addEventListener('dblclick', () => {
+      if (eje === 'v') tamanos.anchoExpl = TAMANOS_INICIALES.anchoExpl; else tamanos.altoEditor = TAMANOS_INICIALES.altoEditor;
+      $('#editor-col').classList.remove('salida-grande');
+      aplicarTamanos(); guardarTamanos();
+      if (editor) editor.refresh();
+    });
+  }
+
+  function activarDivisores() {
+    aplicarTamanos();
+    arrastrar($('#div-v'), 'v', e => {
+      const r = $('#trabajo').getBoundingClientRect();
+      tamanos.anchoExpl = Math.round(limitar((e.clientX - r.left) / r.width * 100, 22, 62) * 10) / 10;
+      aplicarTamanos();
+    });
+    arrastrar($('#div-h'), 'h', e => {
+      const ide = $('#editor-col'), r = ide.getBoundingClientRect();
+      ide.classList.remove('salida-grande');
+      tamanos.altoEditor = Math.round(limitar((e.clientY - r.top) / r.height * 100, 18, 82) * 10) / 10;
+      aplicarTamanos();
+    });
   }
 
   function reiniciarArchivo(paso) {
@@ -364,7 +496,8 @@
     };
     if (window.Sugerencias) Sugerencias.activar(editor, { A, archivos: () => estado.archivos, actual: () => archivoActual });
     const nombres = paso.archivos.slice();
-    let h = nombres.map(n => `<button data-n="${esc(n)}"${A.archivos[n].soloLectura ? ' title="Solo lectura: no hace falta cambiarlo"' : ''}>${I('file-code')}${esc(n)}${A.archivos[n].soloLectura ? I('lock', 'candado') : ''}</button>`).join('');
+    const logoArchivo = window.Logo ? window.Logo(A.id) : I('file-code');
+    let h = nombres.map(n => `<button data-n="${esc(n)}"${A.archivos[n].soloLectura ? ' title="Solo lectura: no hace falta cambiarlo"' : ''}>${logoArchivo}${esc(n)}${A.archivos[n].soloLectura ? I('lock', 'candado') : ''}</button>`).join('');
     if (tienePeticiones(paso)) h += `<span class="separa"></span><button data-n="${HTTP}" class="http" title="Prueba tu API como en Thunder Client">${I('globe')} Probar la API</button>`;
     tabs.innerHTML = h;
     tabs.querySelectorAll('button').forEach(b => b.onclick = () => abrir(b.dataset.n));
