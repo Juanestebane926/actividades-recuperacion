@@ -79,7 +79,7 @@ Si tu script está fuera del repositorio, importa con la ruta absoluta en forma 
 ## Trampas de esta aplicación
 
 - **`cm.setValue()` no simula al estudiante:** la página ignora los cambios con origen `setValue`, así que no se guardan ni se marcan los `____`. Usa `pagina.ponerCodigo` (origen `paste`), `nav.escribir` o `cm.replaceRange(...)`.
-- **El autocompletado solo se abre cuando entra un carácter suelto:** enseguida después de `.` o `@`, y con palabras desde la segunda letra. Por eso `escribir` va letra por letra. Con un menú abierto, `Tab` elige siempre; `Enter` elige solo si moviste la selección con las flechas o si es una lista de miembros (después de `.` o `@`); si no, baja de línea.
+- **El autocompletado solo se abre cuando entra un carácter suelto:** enseguida después de `.` o `@`, y con palabras desde la segunda letra. Por eso `escribir` va letra por letra. Con un menú abierto, `Enter` y `Tab` aceptan la sugerencia marcada, como en un IDE; para bajar de línea sin aceptar, cierra antes con `Escape`.
 - **Los diálogos** (como "¿salir sin guardar?" al navegar) se aceptan solos, para que `ir()` no se quede colgado.
 - **El editor no se puede devolver con `ev`:** no hagas `return cm` ni `window.cm = …` como último valor. Devuelve datos simples (texto, números, arreglos).
 - **Pasos desde 0:** `#menu-pasos button[data-i="5"]` es el paso 6, y `data-i` igual al número de pasos es la pantalla de la nota.

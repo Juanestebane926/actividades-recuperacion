@@ -411,16 +411,15 @@ window.Sugerencias = (function () {
    */
   function filtrar(lista, prefijo) {
     const p = prefijo.toLowerCase();
-    const empieza = lista.filter(x => x.text.toLowerCase().startsWith(p) && x.text.toLowerCase() !== p);
+    const empiezaTodo = lista.filter(x => x.text.toLowerCase().startsWith(p) && x.text.toLowerCase() !== p);
+    // Primero las que coinciden también en mayúsculas/minúsculas: "vacanteSer" → la variable antes que la clase
+    const empieza = empiezaTodo.filter(x => x.text.startsWith(prefijo)).concat(empiezaTodo.filter(x => !x.text.startsWith(prefijo)));
     const enParte = p.length < 3 ? [] : lista.filter(x => {
       const t = x.text, i = t.toLowerCase().indexOf(p);
       return i > 0 && !t.toLowerCase().startsWith(p) && /[A-Z_]/.test(t[i]) && /[a-z0-9]/.test(t[i - 1] || '');
     });
     return empieza.concat(enParte).slice(0, 40);
   }
-
-  // Qué tipo de lista se mostró la última vez: 'miembro' (tras "." o "@" o una prop de JSX) o 'palabra'
-  let ultimoTipo = 'palabra';
 
   /** Props de los componentes del proyecto, leídas de su desestructuración: function EstadoBadge({ nota }) */
   function propsDe(componente) {
@@ -447,7 +446,6 @@ window.Sugerencias = (function () {
     let lista = [];
     const vistos = new Set();
     const agregar = it => { if (!vistos.has(it.text)) { vistos.add(it.text); lista.push(it); } };
-    ultimoTipo = despuesDePunto || arroba ? 'miembro' : 'palabra';
 
     if (ctx.A.motor === 'java') {
       const clases = Object.assign({}, CLASES_JAVA.comun, CLASES_JAVA[ctx.A.id] || {}, clasesProyecto());
@@ -477,7 +475,7 @@ window.Sugerencias = (function () {
           const yaEstan = new Set((tras.slice(abre).match(/(\w+)\s*=/g) || []).map(x => x.replace(/\s*=$/, '')));
           const props = propsDe(comp).filter(x => !yaEstan.has(x));
           const r = filtrar(props.map(x => item(x + '={', 'prop de ' + comp, null, 'campo', x + '={…}')), prefijo);
-          if (r.length) { ultimoTipo = 'miembro'; return { list: r, from: desdeMiembro, to: cur }; }
+          if (r.length) return { list: r, from: desdeMiembro, to: cur };
         }
       }
       HOOKS.forEach(h => agregar(item(h, "import de 'react'", cm2 => agregarImportReact(cm2, h, 'react', false), 'clase')));
@@ -492,30 +490,16 @@ window.Sugerencias = (function () {
   }
 
   /**
-   * Abre las sugerencias solas al escribir: tras "." o "@" enseguida; con palabras, desde la 2.ª letra.
-   * Tab siempre elige. Enter elige solo si el estudiante movió la selección con las flechas o si es una lista de
-   * miembros (tras "." / "@"); si no, Enter baja de línea como siempre (así "th" + Enter no se vuelve "throws").
+   * Abre las sugerencias solas al escribir: tras "." o "@" enseguida; con palabras, desde la 2.ª letra (así no
+   * aparece un menú con cada letra suelta). Como en un IDE, Enter y Tab aceptan la sugerencia marcada y Esc cierra.
    */
   function activar(cm, contexto) {
     ctx = contexto;
     if (!cm.showHint) return; // el complemento no cargó: el editor sigue funcionando sin sugerencias
-    let navego = false;
-    const mover = n => (c, h) => { navego = true; h.moveFocus(n); };
-    const abrir = () => {
-      navego = false;
-      cm.showHint({
-        hint: sugerir, completeSingle: false, closeCharacters: /[\s()\[\]{};:>,=]/,
-        extraKeys: {
-          Up: mover(-1), Down: mover(1), PageUp: (c, h) => { navego = true; h.moveFocus(-h.menuSize() + 1, true); },
-          PageDown: (c, h) => { navego = true; h.moveFocus(h.menuSize() - 1, true); },
-          Tab: (c, h) => h.pick(),
-          Enter: (c, h) => {
-            if (navego || ultimoTipo === 'miembro') h.pick();
-            else { h.close(); c.execCommand('newlineAndIndent'); }
-          },
-        },
-      });
-    };
+    const abrir = () => cm.showHint({
+      hint: sugerir, completeSingle: false, closeCharacters: /[\s()\[\]{};:>,=]/,
+      extraKeys: { Tab: (c, h) => h.pick() },
+    });
     cm.addKeyMap({ 'Ctrl-Space': abrir });
     cm.on('inputRead', (c, ch) => {
       if (ch.origin !== '+input' || c.state.completionActive) return;
