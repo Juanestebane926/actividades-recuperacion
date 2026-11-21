@@ -210,6 +210,7 @@
         </nav>
         <div class="lado">
           <span class="guardado" id="guardado">${I('cloud-check')}<span>Guardado</span></span>
+          <button class="nav-flecha" id="ver-guia" title="Ver la guía de cómo usar la plataforma" aria-label="Ver la guía">${I('circle-help')}</button>
           <div class="usuario">
             <button class="avatar" id="avatar" aria-haspopup="menu" aria-expanded="false" title="${esc(estudiante.nombre)}">${esc(iniciales)}</button>
             <div class="menu-usuario" id="menu-usuario" role="menu" hidden>
@@ -225,10 +226,16 @@
     $('#salir').onclick = salir;
     menu($('#paso-actual'), $('#menu-pasos'));
     menu($('#avatar'), $('#menu-usuario'));
+    $('#ver-guia').onclick = () => {
+      if (estado.paso >= A.pasos.length) irA(A.pasos.length - 1);
+      setTimeout(abrirGuia, 60);
+    };
     irA(Math.min(estado.paso || 0, A.pasos.length));
+    // La primera vez (sin pasos comprobados) se muestra la guía; en otro computador con avance ya no aparece
+    if (!guiaVista() && !Object.keys(estado.res).length && estado.paso < A.pasos.length) setTimeout(abrirGuia, 500);
   }
   document.addEventListener('keydown', ev => {
-    if (!ev.altKey || !estado || !$('#vista')) return;
+    if (guia || !ev.altKey || !estado || !$('#vista')) return;
     if (ev.key === 'ArrowLeft') { ev.preventDefault(); irA(estado.paso - 1); }
     if (ev.key === 'ArrowRight') { ev.preventDefault(); irA(estado.paso + 1); }
   });
@@ -795,6 +802,162 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.development.js"><\/script><script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.development.js"><\/script></head>
       <body><div id="root"></div><pre id="consola"></pre><script>${pre}<\/script><script>${js.replace(/<\/script/gi, '<\\/script')}<\/script></body></html>`;
     return f;
+  }
+
+  // ------------------------------------------------------------------ guía de la primera vez
+  // Oscurece la pantalla y resalta una sección a la vez con un globo que la explica. Sin librerías.
+  const CLAVE_GUIA = 'rec2:guia:' + A.id;
+  let guia = null;   // guía abierta: { pasos, i, capa, foco, globo }
+
+  function guiaVista() { try { return localStorage.getItem(CLAVE_GUIA) === '1'; } catch (e) { return false; } }
+  function marcarGuiaVista() { try { localStorage.setItem(CLAVE_GUIA, '1'); } catch (e) { /* sin almacenamiento */ } }
+  const visible = el => !!(el && el.offsetWidth && el.getClientRects().length);
+  const estrecho = () => window.innerWidth < 700;
+
+  /** Las paradas de la guía. Las que apuntan a algo que no está en pantalla (por ejemplo, Probar la API) se omiten. */
+  function paradasGuia() {
+    const ejecutar = A.motor === 'react' ? 'Arma tu app y te la muestra funcionando, para que la pruebes como lo haría un usuario.'
+      : A.pasos.some(tienePeticiones) ? 'Compila y corre tu código de verdad. En los pasos de API arranca tu aplicación y le envía peticiones.'
+        : 'Compila y corre tu código de verdad y te muestra lo que imprime.';
+    return [
+      { titulo: 'Así funciona tu actividad', texto: `Son ${A.pasos.length} pasos. En cada uno lees un tema, completas un código y lo compruebas. Te mostramos dónde está cada cosa; toma menos de un minuto.` },
+      { sel: '.explicacion', lado: 'derecha', titulo: 'Lee la explicación', texto: 'Aquí está el tema del paso, con ejemplos de código. Léela antes de escribir.' },
+      { sel: '.tarea', lado: 'derecha', centrar: true, titulo: 'Tu tarea', texto: 'Este bloque dice exactamente qué tienes que hacer en el paso. Si te atascas, debajo hay pistas.' },
+      { sel: '.editor-caja', lado: 'izquierda', titulo: 'Completa el código', texto: 'Reemplaza cada espacio resaltado <code class="blanco">____</code> por el código correcto. Si el paso tiene varios archivos, cámbialos con las pestañas de arriba.' },
+      { sel: '#ejecutar', lado: 'arriba', titulo: 'Ejecutar', texto: ejecutar },
+      { sel: '#comprobar', lado: 'arriba', titulo: 'Comprobar', texto: 'Corre las pruebas automáticas del paso y te dice cuáles pasan y cuáles fallan. También funciona con <kbd class="kbd">Ctrl</kbd> + <kbd class="kbd">Enter</kbd>.' },
+      { sel: '.salida', lado: 'izquierda', titulo: 'Mira el resultado', texto: 'Aquí aparece lo que hizo tu código o el resultado de las pruebas. Si algo falla, el mensaje dice el archivo y la línea: púlsalo para ir directo.' },
+      { sel: '.pestanas .http', lado: 'abajo', titulo: 'Probar la API', texto: 'En los pasos de API, esta pestaña te deja escribir las peticiones que recibe tu aplicación, como en Thunder Client.' },
+      { sel: '.ruta', lado: 'abajo', titulo: 'Tus pasos', texto: estrecho()
+        ? 'La ficha amarilla es el paso en el que estás: púlsala para ver todos los pasos y cuáles ya completaste. Con las flechas vas al anterior o al siguiente.'
+        : 'Cada punto es un paso: se pone verde cuando pasas sus pruebas y rojo si alguna falla. La ficha amarilla es el paso en el que estás. Cuando lo completes, <b>Siguiente</b> se pone azul.' },
+      { sel: '.nodo.nota', lado: 'abajo', titulo: 'Califica al final', texto: 'Cuando termines, entra a <b>Nota</b> y pulsa <b>Calificar mi actividad</b>. La nota queda registrada para tu profesor y puedes calificar varias veces.' },
+      { sel: '#ver-guia', lado: 'abajo', titulo: 'Todo se guarda solo', texto: 'Tu código se guarda mientras escribes y puedes seguir en otro computador con tu documento y PIN. Para ver esta guía otra vez, pulsa este botón.' },
+    ].filter(p => !p.sel || visible($(p.sel)));
+  }
+
+  function abrirGuia() {
+    if (guia || !$('#trabajo')) return;
+    document.querySelectorAll('.menu-pasos, .menu-usuario').forEach(m => { m.hidden = true; });
+    const capa = document.createElement('div');
+    capa.className = 'guia-capa';
+    const foco = document.createElement('div');
+    foco.className = 'guia-foco';
+    const globo = document.createElement('div');
+    globo.className = 'guia-globo';
+    globo.setAttribute('role', 'dialog');
+    globo.setAttribute('aria-modal', 'true');
+    globo.setAttribute('aria-labelledby', 'guia-titulo');
+    document.body.append(capa, foco, globo);
+    guia = { pasos: paradasGuia(), i: 0, capa, foco, globo };
+    window.addEventListener('resize', colocarGuia);
+    window.addEventListener('scroll', alDesplazar, true);
+    document.addEventListener('keydown', teclasGuia, true);
+    mostrarParada(0);
+  }
+
+  function cerrarGuia() {
+    if (!guia) return;
+    marcarGuiaVista();
+    guia.capa.remove(); guia.foco.remove(); guia.globo.remove();
+    guia = null;
+    window.removeEventListener('resize', colocarGuia);
+    window.removeEventListener('scroll', alDesplazar, true);
+    document.removeEventListener('keydown', teclasGuia, true);
+    const ex = $('.explicacion');
+    if (ex) ex.scrollTop = 0;
+    if (estrecho()) window.scrollTo(0, 0); else if (editor) editor.focus();
+  }
+
+  /** Al desplazarse la página, el recuadro sigue a la sección sin animación (si no, llega tarde). */
+  function alDesplazar() {
+    if (!guia) return;
+    guia.foco.style.transition = guia.globo.style.transition = 'none';
+    colocarGuia();
+  }
+
+  /** Mientras la guía está abierta, el teclado solo la maneja a ella (no cambia de paso ni comprueba). */
+  function teclasGuia(ev) {
+    if (!guia) return;
+    const k = ev.key;
+    if ((k === 'Enter' || k === ' ') && guia.globo.contains(document.activeElement)) return;   // pulsa el botón que tiene el foco
+    ev.stopPropagation();
+    ev.preventDefault();
+    if (k === 'Escape') cerrarGuia();
+    else if (k === 'ArrowRight' && !ev.altKey) mostrarParada(guia.i + 1);
+    else if (k === 'ArrowLeft' && !ev.altKey) mostrarParada(guia.i - 1);
+    else if (k === 'Tab') {
+      // El foco se queda dentro del globo
+      const b = [...guia.globo.querySelectorAll('button')];
+      const i = b.indexOf(document.activeElement);
+      b[(i + (ev.shiftKey ? -1 : 1) + b.length) % b.length].focus();
+    }
+  }
+
+  function mostrarParada(i) {
+    if (!guia || i < 0) return;
+    const { pasos, globo } = guia;
+    if (i >= pasos.length) { cerrarGuia(); return; }
+    guia.i = i;
+    const p = pasos[i], inicio = !p.sel, ultimo = i === pasos.length - 1;
+    globo.innerHTML = `
+      ${inicio ? '' : `<div class="guia-cuenta">${i} de ${pasos.length - 1}</div>`}
+      <h2 id="guia-titulo">${p.titulo}</h2>
+      <p>${p.texto}</p>
+      <div class="guia-botones">
+        <button class="btn" data-variant="ghost" data-size="sm" data-guia="cerrar">${inicio ? 'Ahora no' : 'Saltar guía'}</button>
+        <span class="espacio"></span>
+        ${i > 1 ? '<button class="btn" data-variant="outline" data-size="sm" data-guia="atras">Atrás</button>' : ''}
+        <button class="btn" data-size="sm" data-guia="seguir">${inicio ? 'Ver la guía' : ultimo ? 'Empezar a trabajar' : 'Siguiente'}</button>
+      </div>`;
+    globo.querySelectorAll('[data-guia]').forEach(b => b.onclick = () => {
+      const a = b.dataset.guia;
+      if (a === 'cerrar') cerrarGuia(); else mostrarParada(guia.i + (a === 'atras' ? -1 : 1));
+    });
+    const el = p.sel && $(p.sel);
+    const barra = $('.barra');
+    if (el && estrecho()) {
+      // En celular la barra queda fija arriba: la sección se lleva justo debajo de ella
+      if (!barra.contains(el)) window.scrollBy({ top: el.getBoundingClientRect().top - barra.offsetHeight - 12, behavior: 'instant' });
+    } else if (el) el.scrollIntoView({ block: p.centrar ? 'center' : 'nearest', behavior: 'instant' });
+    guia.foco.style.transition = globo.style.transition = '';
+    colocarGuia();
+    globo.querySelector('[data-guia="seguir"]').focus({ preventScroll: true });
+  }
+
+  /** Pone el recuadro sobre la sección y el globo al lado que quepa (en celular, abajo de la pantalla). */
+  function colocarGuia() {
+    if (!guia) return;
+    const p = guia.pasos[guia.i], el = p.sel && $(p.sel);
+    const { foco, globo, capa } = guia;
+    const W = window.innerWidth, H = window.innerHeight, m = 12;
+    const gw = globo.offsetWidth, gh = globo.offsetHeight;
+    capa.classList.toggle('sombra', !el);
+    foco.hidden = !el;
+    if (!el) {
+      globo.style.left = Math.max(m, (W - gw) / 2) + 'px';
+      globo.style.top = Math.max(m, (H - gh) / 2) + 'px';
+      return;
+    }
+    const r = el.getBoundingClientRect(), pad = 6;
+    const f = { top: Math.max(4, r.top - pad), left: Math.max(4, r.left - pad), right: Math.min(W - 4, r.right + pad), bottom: Math.min(H - 4, r.bottom + pad) };
+    Object.assign(foco.style, { top: f.top + 'px', left: f.left + 'px', width: Math.max(0, f.right - f.left) + 'px', height: Math.max(0, f.bottom - f.top) + 'px' });
+    let pos = null;
+    if (estrecho()) pos = { top: H - gh - m, left: Math.max(m, (W - gw) / 2) };
+    else {
+      const cx = (f.left + f.right - gw) / 2, cy = (f.top + f.bottom - gh) / 2;
+      const opciones = { abajo: { top: f.bottom + m, left: cx }, arriba: { top: f.top - m - gh, left: cx }, derecha: { top: cy, left: f.right + m }, izquierda: { top: cy, left: f.left - m - gw } };
+      const cabe = o => o.top >= m && o.left >= m && o.top + gh <= H - m && o.left + gw <= W - m;
+      for (const lado of [p.lado, 'abajo', 'arriba', 'derecha', 'izquierda']) {
+        const o = Object.assign({}, opciones[lado]);
+        // Se corre a lo largo del lado elegido para que no se salga de la pantalla
+        if (lado === 'abajo' || lado === 'arriba') o.left = limitar(o.left, m, W - gw - m); else o.top = limitar(o.top, m, H - gh - m);
+        if (cabe(o)) { pos = o; break; }
+      }
+      if (!pos) pos = { top: H - gh - m, left: W - gw - m };
+    }
+    globo.style.top = pos.top + 'px';
+    globo.style.left = pos.left + 'px';
   }
 
   // ------------------------------------------------------------------ entrega y nota
